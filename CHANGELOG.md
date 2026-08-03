@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-08-03
+
+### Fixed
+
+- cleanup временного файла реквизитов после `hubctl backup` и `hubctl update`;
+- HSTS для сервисных поддоменов без опасного включения browser preload.
+
 ## [0.1.0-alpha.2] - 2026-08-03
 
 ### Fixed

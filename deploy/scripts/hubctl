@@ -59,14 +59,14 @@ doctor_cmd() {
     return "$failed"
 }
 
-backup_cmd() {
+backup_cmd() (
     need_root; load_env
     local stamp target credentials_file
     stamp="$(date -u +%Y%m%dT%H%M%SZ)"
     target="/var/backups/hub-portal/$stamp"
     install -d -m 700 "$target"
     credentials_file="$(mktemp)"
-    trap 'rm -f "$credentials_file"' RETURN
+    trap 'rm -f "$credentials_file"' EXIT
     chmod 600 "$credentials_file"
     cat > "$credentials_file" <<EOF
 [client]
@@ -79,7 +79,7 @@ EOF
     tar -czf "$target/nginx.tar.gz" /etc/nginx/sites-available/hub-portal /etc/nginx/hub-log-mode /etc/nginx/conf.d/hub-portal-*.conf 2>/dev/null || true
     printf '%s\n' "$(current_release)" > "$target/release-path"
     echo "$target"
-}
+)
 
 restart_cmd() {
     need_root
