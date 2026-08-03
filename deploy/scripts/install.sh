@@ -62,6 +62,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ $EUID -eq 0 ]] || die "Запустите установщик через sudo."
 [[ -n "$SOURCE_ROOT" && -f "$SOURCE_ROOT/manage.py" ]] || die "Исходный код HUB не найден."
+# shellcheck source=/etc/os-release
 source /etc/os-release
 case "${ID:-}:${VERSION_ID:-}" in
     debian:*) dpkg --compare-versions "$VERSION_ID" ge 12 || die "Нужен Debian 12+." ;;
@@ -221,7 +222,10 @@ FLUSH PRIVILEGES;
 SQL
 
 info "Инициализация приложения"
-set -a; source "$ENV_FILE"; set +a
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
 cd "$RELEASE_DIR"
 "$VENV_DIR/bin/python" manage.py migrate --noinput
 printf '%s\n' "$ADMIN_PASSWORD" | "$VENV_DIR/bin/python" manage.py bootstrap_admin \

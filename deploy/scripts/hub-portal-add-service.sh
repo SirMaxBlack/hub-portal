@@ -187,7 +187,7 @@ build_https_config() {
         fi
     fi
 
-    local forwarded_for_directive='        proxy_set_header X-Forwarded-For $remote_addr;'
+    local forwarded_for_directive="        proxy_set_header X-Forwarded-For \$remote_addr;"
     if [[ "$OMIT_X_FORWARDED_FOR" == "1" ]]; then
         forwarded_for_directive='        proxy_set_header X-Forwarded-For "";'
     fi

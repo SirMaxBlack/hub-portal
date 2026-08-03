@@ -95,7 +95,9 @@ cleanup() {
         else
             rm -f "$LOG_SNIPPET"
         fi
-        nginx -t >/dev/null 2>&1 && systemctl reload nginx >/dev/null 2>&1 || true
+        if nginx -t >/dev/null 2>&1; then
+            systemctl reload nginx >/dev/null 2>&1 || true
+        fi
     fi
     rm -rf "$TMP_DIR"
 }
