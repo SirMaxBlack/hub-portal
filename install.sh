@@ -32,15 +32,15 @@ else
         "https://api.github.com/repos/$REPOSITORY/releases/tags/$requested_version")"
 fi
 read -r tag archive_url checksum_url < <(
-    python3 -c 'import json,sys; p=json.load(sys.stdin); a=p.get("assets",[]); arc=next((x["browser_download_url"] for x in a if x["name"].endswith(".tar.gz")), ""); sha=next((x["browser_download_url"] for x in a if x["name"].endswith(".sha256")), ""); print(p.get("tag_name", ""), arc, sha)' <<<"$release_json"
+    python3 -c 'import json,sys; p=json.load(sys.stdin); a=p.get("assets",[]); arc=next((x["url"] for x in a if x["name"].endswith(".tar.gz")), ""); sha=next((x["url"] for x in a if x["name"].endswith(".sha256")), ""); print(p.get("tag_name", ""), arc, sha)' <<<"$release_json"
 )
 [[ -n "$tag" && -n "$archive_url" && -n "$checksum_url" ]] || {
     echo "В последнем релизе отсутствует установочный архив или checksum." >&2
     exit 2
 }
 
-curl -fsSL "${auth_args[@]}" -o "$tmp_dir/hub-portal.tar.gz" "$archive_url"
-curl -fsSL "${auth_args[@]}" -o "$tmp_dir/hub-portal.tar.gz.sha256" "$checksum_url"
+curl -fsSL "${auth_args[@]}" -H "Accept: application/octet-stream" -o "$tmp_dir/hub-portal.tar.gz" "$archive_url"
+curl -fsSL "${auth_args[@]}" -H "Accept: application/octet-stream" -o "$tmp_dir/hub-portal.tar.gz.sha256" "$checksum_url"
 (cd "$tmp_dir" && awk '{print $1 "  hub-portal.tar.gz"}' hub-portal.tar.gz.sha256 | sha256sum -c -)
 mkdir -p "$tmp_dir/source"
 tar -xzf "$tmp_dir/hub-portal.tar.gz" -C "$tmp_dir/source" --strip-components=1

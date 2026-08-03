@@ -124,11 +124,11 @@ update_cmd() {
         api_url="https://api.github.com/repos/$REPOSITORY/releases/tags/$requested"
         release_json="$(curl -fsSL "${auth_args[@]}" -H 'Accept: application/vnd.github+json' "$api_url")"
     fi
-    read -r tag archive_url checksum_url < <(python3 -c 'import json,sys; p=json.load(sys.stdin); a=p.get("assets",[]); print(p.get("tag_name",""), next((x["browser_download_url"] for x in a if x["name"].endswith(".tar.gz")),""), next((x["browser_download_url"] for x in a if x["name"].endswith(".sha256")),""))' <<<"$release_json")
+    read -r tag archive_url checksum_url < <(python3 -c 'import json,sys; p=json.load(sys.stdin); a=p.get("assets",[]); print(p.get("tag_name",""), next((x["url"] for x in a if x["name"].endswith(".tar.gz")),""), next((x["url"] for x in a if x["name"].endswith(".sha256")),""))' <<<"$release_json")
     [[ -n "$tag" && -n "$archive_url" && -n "$checksum_url" ]] || die "Артефакты релиза не найдены."
     tmp="$(mktemp -d)"
-    curl -fsSL "${auth_args[@]}" -o "$tmp/release.tar.gz" "$archive_url"
-    curl -fsSL "${auth_args[@]}" -o "$tmp/release.tar.gz.sha256" "$checksum_url"
+    curl -fsSL "${auth_args[@]}" -H 'Accept: application/octet-stream' -o "$tmp/release.tar.gz" "$archive_url"
+    curl -fsSL "${auth_args[@]}" -H 'Accept: application/octet-stream' -o "$tmp/release.tar.gz.sha256" "$checksum_url"
     (cd "$tmp" && sed -i 's/  .*/  release.tar.gz/' release.tar.gz.sha256 && sha256sum -c release.tar.gz.sha256)
     version="${tag#v}"; release_id="${version}-$(date -u +%Y%m%dT%H%M%SZ)"
     release_dir="$APP_ROOT/releases/$release_id"; venv_dir="$APP_ROOT/venvs/$release_id"
