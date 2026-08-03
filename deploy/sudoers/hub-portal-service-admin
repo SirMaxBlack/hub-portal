@@ -1,0 +1,1 @@
+hubportal ALL=(root) NOPASSWD: /usr/local/bin/hub-portal-service-admin

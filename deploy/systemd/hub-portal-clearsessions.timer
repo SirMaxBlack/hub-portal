@@ -1,0 +1,9 @@
+[Unit]
+Description=Run HUB Portal clear expired sessions daily
+
+[Timer]
+OnCalendar=*-*-* 03:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

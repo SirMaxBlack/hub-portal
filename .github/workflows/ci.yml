@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    env:
+      HUB_PORTAL_SECRET_KEY: ci-only-secret
+      HUB_PORTAL_PUBLIC_HOST: hub.example.com
+      HUB_PORTAL_PUBLIC_URL: https://hub.example.com
+      HUB_PORTAL_SERVICE_DOMAIN_SUFFIX: .hub.example.com
+      HUB_PORTAL_ALLOWED_HOSTS: hub.example.com,.hub.example.com,127.0.0.1,localhost,testserver
+      HUB_PORTAL_CSRF_TRUSTED_ORIGINS: https://hub.example.com,https://*.hub.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Check migrations
+        run: python manage.py makemigrations --check --dry-run
+      - name: Django checks
+        run: python manage.py check
+      - name: Tests
+        run: python manage.py test portal --verbosity 1
+      - name: Build fingerprinted static
+        run: python manage.py collectstatic --noinput
+      - name: Validate static manifest
+        run: test -s staticfiles/staticfiles.json
+
+  shellcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Check shell scripts
+        run: shellcheck install.sh deploy/scripts/*.sh

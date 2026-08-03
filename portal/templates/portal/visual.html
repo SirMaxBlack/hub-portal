@@ -1,0 +1,143 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Визуал{% endblock %}
+{% block header_title %}Визуал{% endblock %}
+
+{% block content %}
+<section class="section-card table-panel visual-page-panel">
+    {% if visual_form_errors %}
+        <div class="form-error">
+            {% for error in visual_form_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="stack-form visual-settings-form">
+        {% csrf_token %}
+        <section class="security-panel-card visual-settings-card">
+            <div class="panel-subhead">
+                <div>
+                    <h3>Настройки визуала портала</h3>
+                    <p class="field-help">Параметры анимации применяются к странице авторизации и к странице блокировки по IP.</p>
+                </div>
+            </div>
+
+            <div class="form-grid visual-settings-grid">
+                <div class="field">
+                    <label for="id_login_particles_desktop_count">Desktop: окно авторизации</label>
+                    <input
+                        id="id_login_particles_desktop_count"
+                        type="number"
+                        min="1"
+                        max="400"
+                        name="login_particles_desktop_count"
+                        value="{{ visual_settings.login_particles_desktop_count }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_blocked_particles_desktop_count">Desktop: блокировка по IP</label>
+                    <input
+                        id="id_blocked_particles_desktop_count"
+                        type="number"
+                        min="1"
+                        max="400"
+                        name="blocked_particles_desktop_count"
+                        value="{{ visual_settings.blocked_particles_desktop_count }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_login_particles_mobile_count">Mobile: окно авторизации</label>
+                    <input
+                        id="id_login_particles_mobile_count"
+                        type="number"
+                        min="1"
+                        max="400"
+                        name="login_particles_mobile_count"
+                        value="{{ visual_settings.login_particles_mobile_count }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_blocked_particles_mobile_count">Mobile: блокировка по IP</label>
+                    <input
+                        id="id_blocked_particles_mobile_count"
+                        type="number"
+                        min="1"
+                        max="400"
+                        name="blocked_particles_mobile_count"
+                        value="{{ visual_settings.blocked_particles_mobile_count }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_calm_speed_px">Скорость в спокойствии (px/sec)</label>
+                    <input
+                        id="id_calm_speed_px"
+                        type="number"
+                        min="1"
+                        max="1000"
+                        name="calm_speed_px"
+                        value="{{ visual_settings.calm_speed_px }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_alert_speed_px">Скорость в возбуждении (px/sec)</label>
+                    <input
+                        id="id_alert_speed_px"
+                        type="number"
+                        min="1"
+                        max="1000"
+                        name="alert_speed_px"
+                        value="{{ visual_settings.alert_speed_px }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_invalid_alert_duration_seconds">Тревога при ошибке входа (сек.)</label>
+                    <input
+                        id="id_invalid_alert_duration_seconds"
+                        type="number"
+                        min="1"
+                        max="60"
+                        name="invalid_alert_duration_seconds"
+                        value="{{ visual_settings.invalid_alert_duration_seconds }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_lock_alert_duration_seconds">Тревога при блокировке (сек.)</label>
+                    <input
+                        id="id_lock_alert_duration_seconds"
+                        type="number"
+                        min="1"
+                        max="60"
+                        name="lock_alert_duration_seconds"
+                        value="{{ visual_settings.lock_alert_duration_seconds }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_alert_fade_duration_seconds">Затухание тревоги (сек.)</label>
+                    <input
+                        id="id_alert_fade_duration_seconds"
+                        type="number"
+                        min="1"
+                        max="60"
+                        name="alert_fade_duration_seconds"
+                        value="{{ visual_settings.alert_fade_duration_seconds }}"
+                        inputmode="numeric"
+                    >
+                </div>
+            </div>
+
+            <div class="inline-actions security-form-actions">
+                <button type="submit" class="primary-button">Сохранить</button>
+            </div>
+        </section>
+    </form>
+</section>
+{% endblock %}

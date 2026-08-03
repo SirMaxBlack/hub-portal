@@ -1,0 +1,9 @@
+[Unit]
+Description=Run HUB Portal audit pruning daily
+
+[Timer]
+OnCalendar=*-*-* 03:25:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

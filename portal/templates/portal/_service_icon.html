@@ -1,0 +1,98 @@
+{% if service.icon_key == "crm" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="12" y="16" width="40" height="32" rx="10"></rect>
+    <path d="M20 24h24M20 32h16M20 40h10"></path>
+</svg>
+{% elif service.icon_key == "dns" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="18"></circle>
+    <path d="M14 32h36M32 14c6 6 6 30 0 36M32 14c-6 6-6 30 0 36"></path>
+</svg>
+{% elif service.icon_key == "mqtt" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="14" y="26" width="12" height="12" rx="4"></rect>
+    <rect x="38" y="18" width="12" height="12" rx="4"></rect>
+    <rect x="38" y="38" width="12" height="12" rx="4"></rect>
+    <path d="M26 32h12M44 30v8"></path>
+</svg>
+{% elif service.icon_key == "netbox" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M32 12l18 10v20L32 52 14 42V22z"></path>
+    <path d="M32 12v40M14 22l18 10 18-10"></path>
+</svg>
+{% elif service.icon_key == "billing" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M24 16h10c7 0 12 4 12 10s-5 10-12 10H24z"></path>
+    <path d="M24 36h12c7 0 12 4 12 10s-5 10-12 10H24z"></path>
+    <path d="M20 12v40"></path>
+</svg>
+{% elif service.icon_key == "graylog" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M16 18h32l-10 12v14l-12 6V30z"></path>
+    <path d="M24 18v8h16v-8"></path>
+</svg>
+{% elif service.icon_key == "frigate" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="14" y="22" width="24" height="20" rx="6"></rect>
+    <path d="M38 28l12-6v20l-12-6"></path>
+    <circle cx="26" cy="32" r="5"></circle>
+</svg>
+{% elif service.icon_key == "homeassistant" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M16 30l16-14 16 14"></path>
+    <path d="M22 30v18h20V30"></path>
+    <path d="M28 40h8"></path>
+</svg>
+{% elif service.icon_key == "server" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="14" y="14" width="36" height="14" rx="5"></rect>
+    <rect x="14" y="36" width="36" height="14" rx="5"></rect>
+    <path d="M22 21h.01M22 43h.01M30 21h10M30 43h10"></path>
+</svg>
+{% elif service.icon_key == "database" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <ellipse cx="32" cy="18" rx="16" ry="8"></ellipse>
+    <path d="M16 18v14c0 4 7 8 16 8s16-4 16-8V18"></path>
+    <path d="M16 32v14c0 4 7 8 16 8s16-4 16-8V32"></path>
+</svg>
+{% elif service.icon_key == "monitor" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="12" y="16" width="40" height="26" rx="6"></rect>
+    <path d="M24 50h16M30 42v8M22 50h20"></path>
+</svg>
+{% elif service.icon_key == "camera" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M18 22h10l4-4h8l4 4h2a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6V28a6 6 0 0 1 6-6z"></path>
+    <circle cx="32" cy="35" r="8"></circle>
+</svg>
+{% elif service.icon_key == "cloud" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M22 48h22a10 10 0 0 0 0-20 14 14 0 0 0-27-3A9 9 0 0 0 22 48z"></path>
+</svg>
+{% elif service.icon_key == "mail" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="12" y="18" width="40" height="28" rx="6"></rect>
+    <path d="M16 24l16 12 16-12"></path>
+</svg>
+{% elif service.icon_key == "users" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="24" cy="24" r="8"></circle>
+    <circle cx="42" cy="26" r="6"></circle>
+    <path d="M12 48c2-7 7-11 12-11s10 4 12 11"></path>
+    <path d="M34 48c1.5-5 5-8 9-8s7.5 3 9 8"></path>
+</svg>
+{% elif service.icon_key == "chart" %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M16 48V24"></path>
+    <path d="M30 48V18"></path>
+    <path d="M44 48V30"></path>
+    <path d="M12 48h40"></path>
+</svg>
+{% else %}
+<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="12" y="12" width="16" height="16" rx="5"></rect>
+    <rect x="36" y="12" width="16" height="16" rx="5"></rect>
+    <rect x="12" y="36" width="16" height="16" rx="5"></rect>
+    <rect x="36" y="36" width="16" height="16" rx="5"></rect>
+</svg>
+{% endif %}

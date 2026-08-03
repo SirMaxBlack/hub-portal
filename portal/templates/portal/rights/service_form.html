@@ -1,0 +1,10 @@
+{% extends "portal/base.html" %}
+
+{% block title %}{{ page_heading }}{% endblock %}
+{% block header_title %}Управление{% endblock %}
+
+{% block content %}
+<section class="glass-panel modal-page-shell">
+    {% include "portal/rights/_service_modal_form.html" %}
+</section>
+{% endblock %}

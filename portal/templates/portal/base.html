@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}HUB{% endblock %}</title>
+    <script>
+        (function () {
+            var storedTheme = localStorage.getItem("hubPortalTheme");
+            if (storedTheme === "light") {
+                document.documentElement.setAttribute("data-theme", "light");
+            }
+        })();
+    </script>
+    <link rel="icon" href="{% static 'portal/favicon.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'portal/styles.css' %}">
+    {% block script_bundle %}
+    <script src="{% static 'portal/app.js' %}" defer></script>
+    {% endblock %}
+</head>
+<body
+    class="{% block body_class %}portal-shell{% endblock %}"
+    data-release-id="{{ hub_release_id }}"
+    data-release-state-url="{% url 'portal:release_state' %}"
+>
+    <div class="bg-orb bg-orb-a"></div>
+    <div class="bg-orb bg-orb-b"></div>
+    <div class="bg-grid"></div>
+
+    <main class="layout">
+        {% if user.is_authenticated and not hide_authenticated_chrome %}
+            <header class="topbar glass-panel">
+                <div class="topbar-actions">
+                    <div class="desktop-topbar">
+                        <div class="identity-chip">
+                            <span class="identity-name">{{ user.display_name }}</span>
+                            <span class="identity-role">{% if user.is_staff %}Администратор{% else %}Пользователь{% endif %}</span>
+                        </div>
+                        <nav class="quick-nav" aria-label="Основная навигация">
+                            <a href="{% url 'portal:dashboard' %}" class="ghost-link {% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">Сервисы</a>
+                            {% if user.is_staff %}
+                                <a href="{% url 'portal:rights_home' %}" class="ghost-link {% if request.resolver_match.url_name == 'rights_home' or request.resolver_match.url_name == 'rights_service_create' or request.resolver_match.url_name == 'rights_service_edit' %}is-active{% endif %}">Управление</a>
+                            {% endif %}
+                            <a href="{% url 'portal:account' %}" class="ghost-link {% if request.resolver_match.url_name == 'account' or request.resolver_match.url_name == 'account_session_revoke' or request.resolver_match.url_name == 'account_session_revoke_others' %}is-active{% endif %}">Учётная запись</a>
+                            {% if user.is_staff %}
+                                <a href="{% url 'portal:rights_users' %}" class="ghost-link {% if request.resolver_match.url_name == 'rights_users' or request.resolver_match.url_name == 'rights_user_create' or request.resolver_match.url_name == 'rights_user_edit' %}is-active{% endif %}">Пользователи</a>
+                                <a href="{% url 'portal:rights_logs' %}" class="ghost-link {% if request.resolver_match.url_name == 'rights_logs' or request.resolver_match.url_name == 'rights_log_detail' %}is-active{% endif %}">Журнал</a>
+                                <a href="{% url 'portal:security' %}" class="ghost-link {% if request.resolver_match.url_name == 'security' %}is-active{% endif %}">Безопасность</a>
+                            {% endif %}
+                        </nav>
+                        <div class="topbar-tools">
+                            {% if user.is_staff %}
+                                <a href="{% url 'portal:visual_settings' %}" class="primary-button icon-button theme-toggle-inline theme-toggle-button visual-settings-button {% if request.resolver_match.url_name == 'visual_settings' %}is-active{% endif %}" aria-label="Настройки визуала" title="Настройки визуала">
+                                    <span aria-hidden="true">⚙</span>
+                                </a>
+                            {% endif %}
+                            <button type="button" class="primary-button icon-button theme-toggle-inline theme-toggle-button" data-theme-toggle aria-label="Переключить тему" title="Переключить тему">
+                                <span data-theme-icon>☀</span>
+                            </button>
+                            <form method="post" action="{% url 'portal:logout' %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="ghost-link nav-button">Выход</button>
+                            </form>
+                        </div>
+                    </div>
+                    <button type="button" class="ghost-button mobile-nav-toggle" data-mobile-nav-toggle aria-label="Открыть меню">
+                        <span></span><span></span><span></span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="drawer-shell" data-mobile-nav hidden>
+                <div class="drawer-backdrop" data-mobile-nav-dismiss></div>
+                <aside class="glass-panel drawer-panel" aria-label="Мобильная навигация">
+                    <div class="drawer-header">
+                        <div class="identity-chip">
+                            <span class="identity-name">{{ user.display_name }}</span>
+                            <span class="identity-role">{% if user.is_staff %}Администратор{% else %}Пользователь{% endif %}</span>
+                        </div>
+                        <button type="button" class="ghost-button icon-button" data-mobile-nav-dismiss aria-label="Закрыть меню">×</button>
+                    </div>
+                    <nav class="drawer-nav">
+                        <a href="{% url 'portal:dashboard' %}" class="ghost-link {% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">Сервисы</a>
+                        {% if user.is_staff %}
+                            <a href="{% url 'portal:rights_home' %}" class="ghost-link {% if request.resolver_match.url_name == 'rights_home' or request.resolver_match.url_name == 'rights_service_create' or request.resolver_match.url_name == 'rights_service_edit' %}is-active{% endif %}">Управление</a>
+                        {% endif %}
+                        <a href="{% url 'portal:account' %}" class="ghost-link {% if request.resolver_match.url_name == 'account' or request.resolver_match.url_name == 'account_session_revoke' or request.resolver_match.url_name == 'account_session_revoke_others' %}is-active{% endif %}">Учётная запись</a>
+                        {% if user.is_staff %}
+                            <a href="{% url 'portal:rights_users' %}" class="ghost-link {% if request.resolver_match.url_name == 'rights_users' or request.resolver_match.url_name == 'rights_user_create' or request.resolver_match.url_name == 'rights_user_edit' %}is-active{% endif %}">Пользователи</a>
+                            <a href="{% url 'portal:rights_logs' %}" class="ghost-link {% if request.resolver_match.url_name == 'rights_logs' or request.resolver_match.url_name == 'rights_log_detail' %}is-active{% endif %}">Журнал</a>
+                            <a href="{% url 'portal:security' %}" class="ghost-link {% if request.resolver_match.url_name == 'security' %}is-active{% endif %}">Безопасность</a>
+                            <a href="{% url 'portal:visual_settings' %}" class="ghost-link {% if request.resolver_match.url_name == 'visual_settings' %}is-active{% endif %}">Визуал</a>
+                        {% endif %}
+                    </nav>
+                    <div class="drawer-actions">
+                        <button type="button" class="primary-button theme-toggle-button" data-theme-toggle aria-label="Переключить тему">Тема: <span data-theme-label>Ночь</span></button>
+                        <form method="post" action="{% url 'portal:logout' %}" class="inline-form drawer-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="primary-button drawer-logout-button">Выход</button>
+                        </form>
+                    </div>
+                </aside>
+            </div>
+        {% endif %}
+
+        {% if messages %}
+            <section class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <div class="modal-shell" data-app-modal hidden>
+        <div class="modal-backdrop" data-app-modal-dismiss></div>
+        <section class="glass-panel modal-card modal-card-wide" role="dialog" aria-modal="true" aria-live="polite">
+            <div data-app-modal-content></div>
+        </section>
+    </div>
+
+    <div class="modal-shell" data-secret-modal hidden>
+        <div class="modal-backdrop" data-secret-modal-dismiss></div>
+        <section class="glass-panel modal-card" role="dialog" aria-modal="true" aria-labelledby="secret-modal-title">
+            <div class="section-header modal-header">
+                <div>
+                    <p class="eyebrow" data-secret-modal-eyebrow>Секрет</p>
+                    <h2 id="secret-modal-title" data-secret-modal-title>Секрет</h2>
+                </div>
+                <button type="button" class="ghost-button icon-button" data-secret-modal-dismiss aria-label="Закрыть окно">×</button>
+            </div>
+            <div class="token-modal-body">
+                <p class="field-help" data-secret-modal-subtitle hidden></p>
+                <div class="code-field">
+                    <code class="token-secret" data-secret-modal-value></code>
+                    <button type="button" class="ghost-button icon-button code-copy-button" data-secret-copy-button aria-label="Копировать значение" title="Копировать значение">⧉</button>
+                </div>
+                <dl class="detail-grid detail-grid-compact" data-secret-modal-meta></dl>
+            </div>
+            <div class="inline-actions modal-actions">
+                <button type="button" class="primary-button" data-secret-modal-dismiss>Закрыть</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal-shell" data-service-option-modal hidden>
+        <div class="modal-backdrop" data-service-option-modal-dismiss></div>
+        <section class="glass-panel modal-card modal-card-doc" role="dialog" aria-modal="true" aria-labelledby="service-option-modal-title">
+            <div class="section-header modal-header">
+                <div>
+                    <p class="eyebrow" data-service-option-modal-eyebrow>MAN по функции</p>
+                    <h2 id="service-option-modal-title" data-service-option-modal-title>Опция nginx</h2>
+                    <p class="field-help" data-service-option-modal-subtitle hidden></p>
+                </div>
+                <button type="button" class="ghost-button icon-button" data-service-option-modal-dismiss aria-label="Закрыть окно">×</button>
+            </div>
+            <div class="option-doc-body">
+                <p class="option-doc-summary" data-service-option-modal-summary></p>
+                <dl class="detail-grid detail-grid-compact" data-service-option-modal-meta></dl>
+                <div class="option-doc-sections" data-service-option-modal-sections></div>
+            </div>
+            <div class="inline-actions modal-actions">
+                <button type="button" class="primary-button" data-service-option-modal-dismiss>Закрыть</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="toast-stack" data-toast-stack aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

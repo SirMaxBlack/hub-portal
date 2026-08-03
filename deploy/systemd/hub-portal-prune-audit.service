@@ -1,0 +1,10 @@
+[Unit]
+Description=HUB Portal prune old audit events
+
+[Service]
+Type=oneshot
+User=hubportal
+Group=www-data
+WorkingDirectory=/opt/hub-portal/current
+EnvironmentFile=/etc/hub-portal/hub-portal.env
+ExecStart=/opt/hub-portal/venv/bin/python manage.py prune_audit_events

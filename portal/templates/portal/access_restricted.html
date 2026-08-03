@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HUB</title>
+    <script>
+        (function () {
+            var storedTheme = localStorage.getItem("hubPortalTheme");
+            if (storedTheme === "light") {
+                document.documentElement.setAttribute("data-theme", "light");
+            }
+        })();
+    </script>
+    <link rel="icon" href="{% static 'portal/favicon.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'portal/styles.css' %}">
+    <script src="{% static 'portal/particles.js' %}" defer></script>
+</head>
+<body class="login-shell access-restricted-shell">
+    <div class="bg-orb bg-orb-a"></div>
+    <div class="bg-orb bg-orb-b"></div>
+    <div class="bg-grid"></div>
+
+    <main class="layout">
+        <section
+            class="auth-stage auth-stage-only-particles"
+            data-login-particle-base-variant="alert"
+            data-login-particle-variant="alert"
+            data-login-particle-revert-delay="0"
+            data-login-particle-desktop-count="{{ login_particle_desktop_count }}"
+            data-login-particle-mobile-count="{{ login_particle_mobile_count }}"
+            data-login-particle-calm-speed="{{ login_particle_calm_speed_px }}"
+            data-login-particle-alert-speed="{{ login_particle_alert_speed_px }}"
+            data-login-particle-fade-duration="{{ login_particle_fade_duration_ms }}"
+        >
+            <div class="auth-stage-particles" aria-hidden="true">
+                <canvas class="auth-stage-particles-canvas" data-login-particles-canvas></canvas>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

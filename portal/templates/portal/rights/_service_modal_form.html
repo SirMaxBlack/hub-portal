@@ -1,0 +1,397 @@
+<div class="service-form-shell" data-service-modal-shell>
+    <div class="section-header">
+        <div>
+            <p class="eyebrow">Управление сервисом</p>
+            <h2>{{ page_heading }}</h2>
+            {% if page_subtitle %}
+                <p class="lead user-form-subtitle">{{ page_subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if is_modal %}
+            <button type="button" class="ghost-button icon-button" data-app-modal-dismiss aria-label="Закрыть окно">×</button>
+        {% else %}
+            <a href="{% url 'portal:rights_home' %}" class="ghost-button">Назад к управлению</a>
+        {% endif %}
+    </div>
+
+    <div class="action-bar action-bar-fixed">
+        <div class="status-cluster">
+            {% if managed_service %}
+                <span class="status-pill">{% if managed_service.is_enabled %}Включён{% else %}Отключён{% endif %}</span>
+                <span class="status-pill">{% if managed_service.is_active %}Показывается в портале{% else %}Скрыт из портала{% endif %}</span>
+                <span class="status-pill">{% if managed_service.config_mode == "manual" %}Ручной режим{% else %}Управляемый режим{% endif %}</span>
+            {% else %}
+                <span class="status-pill">Новый сервис</span>
+                <span class="status-pill">Публикация через портал</span>
+            {% endif %}
+        </div>
+        <div class="action-cluster action-cluster-fixed desktop-service-admin" data-service-proxy-actions>
+            <button type="submit" form="service-modal-form" name="operation" value="issue_certificate" formnovalidate class="ghost-button" data-service-certificate-button {% if not form.domain.value and not managed_service.domain %}disabled{% endif %}>Получить сертификат</button>
+            {% if managed_service %}
+                <button type="submit" form="service-modal-form" name="operation" value="validate" class="ghost-button">Проверить nginx</button>
+                <button type="submit" form="service-modal-form" name="operation" value="apply" class="primary-button">Применить</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="tab-strip" data-tab-strip>
+        <button type="button" class="tab-button is-active" data-tab-button="basic">Основное</button>
+        <button type="button" class="tab-button" data-tab-button="health">Проверка</button>
+        <button type="button" class="tab-button" data-tab-button="options">Опции nginx</button>
+        <button type="button" class="tab-button" data-tab-button="manual">Ручной режим</button>
+        {% if managed_service %}
+            <button type="button" class="tab-button" data-tab-button="history">Ревизии</button>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{% if is_modal %}{{ form_action_url }}?modal=1{% else %}{{ form_action_url }}{% endif %}" class="stack-form ajax-modal-form" data-modal-form id="service-modal-form">
+        {% csrf_token %}
+        {% if is_modal %}<input type="hidden" name="modal" value="1">{% endif %}
+        {% if form.non_field_errors %}
+            <div class="form-error">{{ form.non_field_errors|join:", " }}</div>
+        {% endif %}
+        {% if operation_message %}
+            <div class="form-success">{{ operation_message }}</div>
+        {% endif %}
+
+        <section class="tab-panel is-active" data-tab-panel="basic">
+            <div class="field">
+                <label for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
+                {{ form.kind }}
+                <span class="field-help">Reverse proxy публикует внутренний сервис под защищённым доменом. Внешняя ссылка открывает готовый публичный сайт без проксирования.</span>
+                {% if form.kind.errors %}<div class="field-error">{{ form.kind.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="field-error">{{ form.title.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field" data-service-proxy-field>
+                    <label for="{{ form.domain.id_for_label }}">{{ form.domain.label }}</label>
+                    {{ form.domain }}
+                    {% if form.domain.errors %}<div class="field-error">{{ form.domain.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="field" data-service-external-field hidden>
+                <label for="{{ form.external_url.id_for_label }}">{{ form.external_url.label }}</label>
+                {{ form.external_url }}
+                <span class="field-help">Пользователь будет перенаправлен на этот HTTPS/HTTP адрес. Cookie и содержимое сайта через HUB не проходят.</span>
+                {% if form.external_url.errors %}<div class="field-error">{{ form.external_url.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="form-grid" data-service-proxy-field>
+                <div class="field">
+                    <label for="{{ form.upstream_url.id_for_label }}">{{ form.upstream_url.label }}</label>
+                    {{ form.upstream_url }}
+                    {% if form.upstream_url.errors %}<div class="field-error">{{ form.upstream_url.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.precheck_url.id_for_label }}">{{ form.precheck_url.label }}</label>
+                    {{ form.precheck_url }}
+                    {% if form.precheck_url.errors %}<div class="field-error">{{ form.precheck_url.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.icon_key.id_for_label }}">{{ form.icon_key.label }}</label>
+                    {{ form.icon_key }}
+                    {% if form.icon_key.errors %}<div class="field-error">{{ form.icon_key.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.sort_order.id_for_label }}">{{ form.sort_order.label }}</label>
+                    {{ form.sort_order }}
+                    {% if form.sort_order.errors %}<div class="field-error">{{ form.sort_order.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                {{ form.description }}
+                {% if form.description.errors %}<div class="field-error">{{ form.description.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="toggle-grid">
+                <label class="toggle-card" for="{{ form.is_active.id_for_label }}">
+                    <div>
+                        <span class="toggle-card-title">{{ form.is_active.label }}</span>
+                        <span class="field-help">Сервис будет отображаться на вкладке “Сервисы” у пользователей с правами доступа.</span>
+                    </div>
+                    {{ form.is_active }}
+                </label>
+                <label class="toggle-card" for="{{ form.is_enabled.id_for_label }}">
+                    <div>
+                        <span class="toggle-card-title">{{ form.is_enabled.label }}</span>
+                        <span class="field-help">Управляет символьной ссылкой в sites-enabled и доступностью домена через nginx.</span>
+                    </div>
+                    {{ form.is_enabled }}
+                </label>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="health" data-service-proxy-section>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.check_type.id_for_label }}">{{ form.check_type.label }}</label>
+                    {{ form.check_type }}
+                    {% if form.check_type.errors %}<div class="field-error">{{ form.check_type.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.timeout_seconds.id_for_label }}">{{ form.timeout_seconds.label }}</label>
+                    {{ form.timeout_seconds }}
+                    {% if form.timeout_seconds.errors %}<div class="field-error">{{ form.timeout_seconds.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.health_host.id_for_label }}">{{ form.health_host.label }}</label>
+                    {{ form.health_host }}
+                    {% if form.health_host.errors %}<div class="field-error">{{ form.health_host.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.health_port.id_for_label }}">{{ form.health_port.label }}</label>
+                    {{ form.health_port }}
+                    {% if form.health_port.errors %}<div class="field-error">{{ form.health_port.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.health_path.id_for_label }}">{{ form.health_path.label }}</label>
+                    {{ form.health_path }}
+                    {% if form.health_path.errors %}<div class="field-error">{{ form.health_path.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.allowed_status_codes.id_for_label }}">{{ form.allowed_status_codes.label }}</label>
+                    {{ form.allowed_status_codes }}
+                    {% if form.allowed_status_codes.errors %}<div class="field-error">{{ form.allowed_status_codes.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.interval_seconds.id_for_label }}">{{ form.interval_seconds.label }}</label>
+                    {{ form.interval_seconds }}
+                    {% if form.interval_seconds.errors %}<div class="field-error">{{ form.interval_seconds.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.failure_threshold.id_for_label }}">{{ form.failure_threshold.label }}</label>
+                    {{ form.failure_threshold }}
+                    {% if form.failure_threshold.errors %}<div class="field-error">{{ form.failure_threshold.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.success_threshold.id_for_label }}">{{ form.success_threshold.label }}</label>
+                    {{ form.success_threshold }}
+                    {% if form.success_threshold.errors %}<div class="field-error">{{ form.success_threshold.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.cert_fullchain_path.id_for_label }}">{{ form.cert_fullchain_path.label }}</label>
+                    {{ form.cert_fullchain_path }}
+                    {% if form.cert_fullchain_path.errors %}<div class="field-error">{{ form.cert_fullchain_path.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="field">
+                <label for="{{ form.cert_privkey_path.id_for_label }}">{{ form.cert_privkey_path.label }}</label>
+                {{ form.cert_privkey_path }}
+                {% if form.cert_privkey_path.errors %}<div class="field-error">{{ form.cert_privkey_path.errors|join:", " }}</div>{% endif %}
+            </div>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="options" data-service-proxy-section>
+            <section class="service-options-panel">
+                <div class="panel-subhead">
+                    <h3>Готовые профили</h3>
+                    <p class="field-help">Профиль выставляет типовой набор флагов под конкретный класс сервиса. После применения можно вручную скорректировать отдельные функции ниже.</p>
+                </div>
+                <div class="service-profile-grid">
+                    {% for profile in service_option_profiles %}
+                        <article class="service-profile-card">
+                            <div class="service-profile-head">
+                                <div>
+                                    <h4>{{ profile.title }}</h4>
+                                    <p>{{ profile.description }}</p>
+                                </div>
+                                <span class="table-badge {% if profile.recommendation == 'high' %}table-badge-accent{% elif profile.recommendation == 'medium' %}table-badge-muted{% else %}table-badge-subtle{% endif %}">
+                                    {{ profile.recommendation_label }}
+                                </span>
+                            </div>
+                            <p class="field-help">{{ profile.when_to_use }}</p>
+                            <div class="service-profile-tags">
+                                {% for feature_title in profile.feature_titles %}
+                                    <span class="table-badge table-badge-subtle">{{ feature_title }}</span>
+                                {% endfor %}
+                            </div>
+                            {% if profile.caution %}
+                                <p class="field-help service-profile-caution">{{ profile.caution }}</p>
+                            {% endif %}
+                            <button type="button" class="ghost-button service-profile-apply-button" data-service-profile-apply data-profile-key="{{ profile.key }}">
+                                Применить профиль
+                            </button>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="service-options-panel">
+                <div class="panel-subhead">
+                    <h3>Поддерживаемые функции</h3>
+                    <p class="field-help">Зелёный индикатор означает, что функция попадёт в итоговый nginx-конфиг. Авто-опции включаются системой сами. Для каждой строки доступна кнопка <strong>Подробнее</strong> с пояснением, практикой и примерами.</p>
+                </div>
+                <div class="table-wrap">
+                    <table class="portal-table service-options-table">
+                        <thead>
+                            <tr>
+                                <th>Функция</th>
+                                <th>Активирована</th>
+                                <th>Рекомендация</th>
+                                <th>Подробнее</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in service_option_rows %}
+                                <tr class="service-option-row{% if row.locked %} is-locked{% endif %}" data-service-option-row data-option-key="{{ row.key }}" data-option-dependencies="{{ row.dependencies|join:',' }}" data-option-conflicts="{{ row.conflicts|join:',' }}">
+                                    <td data-label="Функция">
+                                        <div class="service-option-copy">
+                                            <strong title="{{ row.summary }}">{{ row.title }}</strong>
+                                            <p class="service-option-description">{{ row.description }}</p>
+                                            <div class="service-option-meta">
+                                                <span class="field-help">{{ row.category }} · {{ row.contexts }}</span>
+                                                {% if row.dependencies_titles %}
+                                                    <span class="field-help">Зависит: {{ row.dependencies_titles|join:", " }}</span>
+                                                {% endif %}
+                                                {% if row.conflicts_titles %}
+                                                    <span class="field-help">Не сочетать: {{ row.conflicts_titles|join:", " }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td data-label="Активирована">
+                                        <div class="service-option-toggle">
+                                            <span class="service-option-state {% if row.active %}is-active{% else %}is-inactive{% endif %}" data-service-option-state></span>
+                                            {% if row.locked %}
+                                                <span class="table-muted">{% if row.auto %}Авто{% else %}Системно{% endif %}</span>
+                                            {% else %}
+                                                <label class="service-option-checkbox">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="managed_features"
+                                                        value="{{ row.key }}"
+                                                        {% if row.active %}checked{% endif %}
+                                                        data-service-option-input
+                                                    >
+                                                    <span>Включить</span>
+                                                </label>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td data-label="Рекомендация">
+                                        <span class="table-badge {% if row.recommendation == 'high' %}table-badge-accent{% elif row.recommendation == 'medium' %}table-badge-muted{% else %}table-badge-subtle{% endif %}">
+                                            {{ row.recommendation_label }}
+                                        </span>
+                                    </td>
+                                    <td data-label="Подробнее">
+                                        <button type="button" class="ghost-button service-option-doc-button" data-service-option-doc-button data-option-key="{{ row.key }}">
+                                            Подробнее
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4">Каталог функций пока не сформирован.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="manual" data-service-proxy-section>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.config_mode.id_for_label }}">{{ form.config_mode.label }}</label>
+                    {{ form.config_mode }}
+                    {% if form.config_mode.errors %}<div class="field-error">{{ form.config_mode.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="service-config-editor-stack">
+                <div class="field">
+                    <label for="{{ form.manual_config.id_for_label }}">{{ form.manual_config.label }}</label>
+                    {{ form.manual_config }}
+                    {% if form.manual_config.errors %}<div class="field-error">{{ form.manual_config.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label>Предпросмотр текущего итогового конфига</label>
+                    <textarea class="readonly-code-field" readonly spellcheck="false">{{ preview_config }}</textarea>
+                </div>
+                {% if live_config %}
+                    <div class="field">
+                        <label>Текущий live-конфиг в nginx</label>
+                        <textarea class="readonly-code-field" readonly spellcheck="false">{{ live_config }}</textarea>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        {% if managed_service %}
+            <section class="tab-panel" data-tab-panel="history">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Ревизии</p>
+                        <h3>История изменений</h3>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="portal-table">
+                        <thead>
+                            <tr>
+                                <th>Когда</th>
+                                <th>Операция</th>
+                                <th>Кто</th>
+                                <th>Статус</th>
+                                <th>Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for revision in service_revisions %}
+                                <tr>
+                                    <td>{{ revision.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ revision.summary }}</td>
+                                    <td>{{ revision.created_by.display_name|default:"Система" }}</td>
+                                    <td>
+                                        <span class="table-badge {% if revision.validated_ok %}table-badge-accent{% else %}table-badge-muted{% endif %}">
+                                            {% if revision.validated_ok %}Проверена{% else %}Черновик{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="ghost-button" data-open-modal-url="{% url 'portal:rights_service_edit' managed_service.pk %}?modal=1&revision={{ revision.pk }}">Открыть</button>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5">Ревизии появятся после первых сохранений и применений.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+
+        <div class="inline-actions sticky-form-actions">
+            <button type="submit" class="ghost-button" name="operation" value="draft">Сохранить черновик</button>
+            <button type="submit" class="ghost-button" name="operation" value="validate">Сохранить и проверить</button>
+            <button type="submit" class="primary-button" name="operation" value="apply">Применить</button>
+            {% if is_modal %}
+                <button type="button" class="ghost-button" data-app-modal-dismiss>Отмена</button>
+            {% else %}
+                <a href="{% url 'portal:rights_home' %}" class="ghost-button">Отмена</a>
+            {% endif %}
+        </div>
+    </form>
+    {{ service_option_catalog|json_script:"service-option-catalog-data" }}
+    {{ service_option_profiles|json_script:"service-option-profile-data" }}
+</div>

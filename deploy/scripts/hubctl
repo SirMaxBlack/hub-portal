@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+APP_ROOT="/opt/hub-portal"
+ENV_FILE="/etc/hub-portal/hub-portal.env"
+REPOSITORY="${HUB_PORTAL_REPOSITORY:-SirMaxBlack/hub-portal}"
+
+die() { echo "Ошибка: $*" >&2; exit 1; }
+need_root() { [[ $EUID -eq 0 ]] || die "Команда требует sudo."; }
+load_env() { [[ -f "$ENV_FILE" ]] || die "HUB не установлен."; set -a; source "$ENV_FILE"; set +a; }
+current_release() { readlink -f "$APP_ROOT/current" 2>/dev/null || true; }
+current_version() { [[ -f "$APP_ROOT/current/VERSION" ]] && tr -d '[:space:]' < "$APP_ROOT/current/VERSION" || echo unknown; }
+install_release_support_files() {
+    local release_dir="$1" unit
+    for unit in "$release_dir"/deploy/systemd/*; do install -m 644 "$unit" "/etc/systemd/system/$(basename "$unit")"; done
+    install -m 755 "$release_dir/deploy/scripts/hub-portal-sync-log-mode.sh" /usr/local/bin/hub-portal-sync-log-mode
+    install -m 755 "$release_dir/deploy/scripts/hub-portal-clear-audit.sh" /usr/local/bin/hub-portal-clear-audit
+    install -m 755 "$release_dir/deploy/scripts/hub-portal-service-admin.sh" /usr/local/bin/hub-portal-service-admin
+    install -m 755 "$release_dir/deploy/scripts/hub-portal-add-service.sh" /usr/local/bin/hub-portal-add-service
+    install -m 755 "$release_dir/deploy/scripts/hubctl" /usr/local/bin/hubctl
+    install -D -m 440 "$release_dir/deploy/sudoers/hub-portal-clear-audit" /etc/sudoers.d/hub-portal-clear-audit
+    install -D -m 440 "$release_dir/deploy/sudoers/hub-portal-service-admin" /etc/sudoers.d/hub-portal-service-admin
+    visudo -cf /etc/sudoers.d/hub-portal-clear-audit >/dev/null
+    visudo -cf /etc/sudoers.d/hub-portal-service-admin >/dev/null
+    install -m 644 "$release_dir/deploy/nginx/hub-portal-upstream.conf" /etc/nginx/conf.d/hub-portal-upstream.conf
+    install -m 644 "$release_dir/deploy/nginx/hub-portal-request-vars.conf" /etc/nginx/conf.d/hub-portal-request-vars.conf
+    install -D -m 644 "$release_dir/deploy/nginx/hub-portal-cookies.js" /etc/nginx/hub-njs/hub-portal-cookies.js
+    install -D -m 644 "$release_dir/deploy/nginx/hub-security-headers.conf" /etc/nginx/snippets/hub-security-headers.conf
+    install -D -m 644 "$release_dir/deploy/nginx/hub-tls.conf" /etc/nginx/snippets/hub-tls.conf
+    install -D -m 644 "$release_dir/deploy/logrotate/hub-bot-noise" /etc/logrotate.d/hub-bot-noise
+    systemctl daemon-reload
+}
+
+status_cmd() {
+    load_env
+    echo "Версия: $(current_version)"
+    echo "Релиз: $(basename "$(current_release)")"
+    echo "URL: $HUB_PORTAL_PUBLIC_URL"
+    systemctl --no-pager --full status hub-portal hub-portal-health-monitor || true
+}
+
+doctor_cmd() {
+    load_env
+    local failed=0
+    for unit in mariadb nginx hub-portal hub-portal-health-monitor; do
+        if systemctl is-active --quiet "$unit"; then echo "[OK] $unit"; else echo "[FAIL] $unit"; failed=1; fi
+    done
+    if nginx -t >/dev/null 2>&1; then echo "[OK] nginx -t"; else echo "[FAIL] nginx -t"; failed=1; fi
+    if "$APP_ROOT/venv/bin/python" "$APP_ROOT/current/manage.py" check --deploy >/dev/null; then
+        echo "[OK] Django check --deploy"
+    else
+        echo "[FAIL] Django check --deploy"; failed=1
+    fi
+    if "$APP_ROOT/venv/bin/python" "$APP_ROOT/current/manage.py" showmigrations --plan >/dev/null; then
+        echo "[OK] database"
+    else
+        echo "[FAIL] database"; failed=1
+    fi
+    return "$failed"
+}
+
+backup_cmd() {
+    need_root; load_env
+    local stamp target credentials_file
+    stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    target="/var/backups/hub-portal/$stamp"
+    install -d -m 700 "$target"
+    credentials_file="$(mktemp)"
+    trap 'rm -f "$credentials_file"' RETURN
+    chmod 600 "$credentials_file"
+    cat > "$credentials_file" <<EOF
+[client]
+host=$HUB_PORTAL_DB_HOST
+user=$HUB_PORTAL_DB_USER
+password=$HUB_PORTAL_DB_PASSWORD
+EOF
+    mariadb-dump --defaults-extra-file="$credentials_file" "$HUB_PORTAL_DB_NAME" | gzip > "$target/database.sql.gz"
+    install -m 600 "$ENV_FILE" "$target/hub-portal.env"
+    tar -czf "$target/nginx.tar.gz" /etc/nginx/sites-available/hub-portal /etc/nginx/hub-log-mode /etc/nginx/conf.d/hub-portal-*.conf 2>/dev/null || true
+    printf '%s\n' "$(current_release)" > "$target/release-path"
+    echo "$target"
+}
+
+restart_cmd() {
+    need_root
+    systemctl restart hub-portal hub-portal-health-monitor
+    doctor_cmd
+}
+
+logs_cmd() {
+    journalctl -u hub-portal -u hub-portal-health-monitor -n "${1:-100}" --no-pager
+}
+
+rollback_cmd() {
+    need_root; load_env
+    local target="${1:-}" current current_venv old_venv
+    [[ -n "$target" ]] || { echo "Доступные релизы:"; find "$APP_ROOT/releases" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -r; return; }
+    [[ -d "$APP_ROOT/releases/$target" ]] || die "Релиз $target не найден."
+    current="$(current_release)"
+    current_venv="$(readlink -f "$APP_ROOT/venv")"
+    old_venv="$APP_ROOT/venvs/$target"
+    [[ -x "$old_venv/bin/python" ]] || die "Venv релиза не найден."
+    ln -sfn "$APP_ROOT/releases/$target" "$APP_ROOT/current"
+    ln -sfn "$old_venv" "$APP_ROOT/venv"
+    if systemctl restart hub-portal hub-portal-health-monitor && doctor_cmd; then
+        echo "Откат выполнен. Миграции БД назад автоматически не применялись."
+    else
+        ln -sfn "$current" "$APP_ROOT/current"
+        ln -sfn "$current_venv" "$APP_ROOT/venv"
+        systemctl restart hub-portal hub-portal-health-monitor || true
+        die "Откат не прошёл проверку; прежний код возвращён."
+    fi
+}
+
+update_cmd() {
+    need_root; load_env
+    local requested="${1:-latest}" api_url release_json tag archive_url checksum_url tmp version release_id release_dir venv_dir previous previous_venv
+    auth_args=(); [[ -n "${GITHUB_TOKEN:-}" ]] && auth_args=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    if [[ "$requested" == "latest" ]]; then
+        api_url="https://api.github.com/repos/$REPOSITORY/releases?per_page=20"
+        release_json="$(curl -fsSL "${auth_args[@]}" -H 'Accept: application/vnd.github+json' "$api_url" \
+            | python3 -c 'import json,sys; releases=json.load(sys.stdin); print(json.dumps(next((item for item in releases if not item.get("draft")), {})))')"
+    else
+        api_url="https://api.github.com/repos/$REPOSITORY/releases/tags/$requested"
+        release_json="$(curl -fsSL "${auth_args[@]}" -H 'Accept: application/vnd.github+json' "$api_url")"
+    fi
+    read -r tag archive_url checksum_url < <(python3 -c 'import json,sys; p=json.load(sys.stdin); a=p.get("assets",[]); print(p.get("tag_name",""), next((x["browser_download_url"] for x in a if x["name"].endswith(".tar.gz")),""), next((x["browser_download_url"] for x in a if x["name"].endswith(".sha256")),""))' <<<"$release_json")
+    [[ -n "$tag" && -n "$archive_url" && -n "$checksum_url" ]] || die "Артефакты релиза не найдены."
+    tmp="$(mktemp -d)"
+    curl -fsSL "${auth_args[@]}" -o "$tmp/release.tar.gz" "$archive_url"
+    curl -fsSL "${auth_args[@]}" -o "$tmp/release.tar.gz.sha256" "$checksum_url"
+    (cd "$tmp" && sed -i 's/  .*/  release.tar.gz/' release.tar.gz.sha256 && sha256sum -c release.tar.gz.sha256)
+    version="${tag#v}"; release_id="${version}-$(date -u +%Y%m%dT%H%M%SZ)"
+    release_dir="$APP_ROOT/releases/$release_id"; venv_dir="$APP_ROOT/venvs/$release_id"
+    mkdir -p "$release_dir"; tar -xzf "$tmp/release.tar.gz" -C "$release_dir" --strip-components=1
+    python3 -m venv "$venv_dir"; "$venv_dir/bin/pip" install --upgrade pip wheel; "$venv_dir/bin/pip" install -r "$release_dir/requirements.txt"
+    set -a; source "$ENV_FILE"; set +a
+    "$venv_dir/bin/python" "$release_dir/manage.py" check
+    backup_cmd >/dev/null
+    "$venv_dir/bin/python" "$release_dir/manage.py" migrate --noinput
+    "$venv_dir/bin/python" "$release_dir/manage.py" collectstatic --noinput
+    [[ -f "$release_dir/staticfiles/staticfiles.json" ]] || die "Manifest статики не создан."
+    printf '%s\n' "$release_id" > "$release_dir/.release-id"; chown -R hubportal:www-data "$release_dir" "$venv_dir"
+    previous="$(current_release)"; previous_venv="$(readlink -f "$APP_ROOT/venv")"
+    ln -sfn "$release_dir" "$APP_ROOT/current"; ln -sfn "$venv_dir" "$APP_ROOT/venv"
+    install_release_support_files "$release_dir"
+    /usr/local/bin/hub-portal-sync-log-mode enabled
+    if nginx -t && systemctl reload nginx \
+        && systemctl restart hub-portal hub-portal-health-monitor && doctor_cmd; then
+        rm -rf "$tmp"
+        echo "Обновлено до $tag."
+    else
+        ln -sfn "$previous" "$APP_ROOT/current"; ln -sfn "$previous_venv" "$APP_ROOT/venv"
+        systemctl restart hub-portal hub-portal-health-monitor || true
+        rm -rf "$tmp"
+        die "Новый релиз не прошёл проверку; код возвращён."
+    fi
+}
+
+uninstall_cmd() {
+    need_root; load_env
+    read -r -p "Введите REMOVE HUB для удаления: " confirmation
+    [[ "$confirmation" == "REMOVE HUB" ]] || die "Отменено."
+    backup_path="$(backup_cmd)"; echo "Backup: $backup_path"
+    systemctl disable --now hub-portal hub-portal-health-monitor hub-portal-clearsessions.timer hub-portal-prune-audit.timer || true
+    rm -f /etc/nginx/sites-enabled/hub-portal /etc/nginx/sites-available/hub-portal
+    nginx -t && systemctl reload nginx
+    rm -f /etc/systemd/system/hub-portal*.service /etc/systemd/system/hub-portal*.timer
+    rm -f /usr/local/bin/hubctl /usr/local/bin/hub-portal-*
+    systemctl daemon-reload
+    echo "Код и БД сохранены. Для полного удаления используйте backup и удалите $APP_ROOT, $ENV_FILE и БД вручную."
+}
+
+command="${1:-help}"; shift || true
+case "$command" in
+    status) status_cmd ;;
+    doctor) doctor_cmd ;;
+    version) current_version ;;
+    restart) restart_cmd ;;
+    logs) logs_cmd "$@" ;;
+    backup) backup_cmd ;;
+    update) update_cmd "$@" ;;
+    rollback) rollback_cmd "$@" ;;
+    uninstall) uninstall_cmd ;;
+    help|-h|--help) cat <<'EOF'
+hubctl status                 состояние служб и версия
+hubctl doctor                 полная самопроверка
+hubctl version                версия
+hubctl restart                безопасный restart
+hubctl logs [N]               последние N строк journald
+hubctl backup                 backup БД, env и nginx
+hubctl update [tag|latest]    обновление из GitHub Release
+hubctl rollback [release-id]  список релизов или откат к коду релиза
+hubctl uninstall              безопасное отключение с backup
+EOF
+        ;;
+    *) die "Неизвестная команда: $command" ;;
+esac

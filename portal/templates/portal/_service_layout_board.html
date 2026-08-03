@@ -1,0 +1,90 @@
+{% if service_layout_has_services %}
+    <section
+        class="service-layout-board service-grid{% if service_layout_editable %} is-editable{% endif %}"
+        data-service-grid
+        data-service-layout-board
+        {% if service_layout_editable %}
+            data-layout-editable="1"
+            data-layout-save-url="{{ service_layout_update_url }}"
+        {% endif %}
+    >
+        {% for slot in service_layout_slots %}
+            <div
+                class="service-slot{% if not slot.service %} is-empty{% endif %}"
+                data-layout-slot
+                data-slot-index="{{ slot.index }}"
+                {% if slot.service %}data-slot-service-id="{{ slot.service.pk }}"{% endif %}
+            >
+                {% if slot.service %}
+                    {% with service=slot.service current_status=slot.service.ui_status %}
+                        {% if service_layout_editable %}
+                            <div class="service-card-tools service-card-tools-left desktop-service-admin" data-action-menu>
+                                <button
+                                    type="button"
+                                    class="ghost-button icon-button"
+                                    data-action-menu-toggle
+                                    aria-label="Действия для сервиса {{ service.title }}"
+                                    title="Действия для сервиса {{ service.title }}"
+                                >
+                                    <span aria-hidden="true">⚙</span>
+                                </button>
+                                <div class="glass-panel action-menu-panel service-action-menu" data-action-menu-panel hidden>
+                                    <button type="button" class="ghost-button action-menu-item" data-open-modal-url="{% url 'portal:rights_service_edit' service.pk %}?modal=1">Редактирование</button>
+                                    <button type="button" class="ghost-button action-menu-item" data-json-post="{% url 'portal:rights_service_force_check' service.pk %}">Принудительно проверить</button>
+                                    <button type="button" class="ghost-button action-menu-item" data-json-post="{% url 'portal:rights_service_toggle_enabled' service.pk %}" data-confirm="{% if service.is_enabled %}Отключить сервис {{ service.title }}?{% else %}Включить сервис {{ service.title }}?{% endif %}">
+                                        {% if service.is_enabled %}Отключить{% else %}Включить{% endif %}
+                                    </button>
+                                    <button type="button" class="ghost-button action-menu-item action-menu-danger" data-json-post="{% url 'portal:rights_service_delete' service.pk %}" data-confirm="Удалить сервис {{ service.title }}? Конфиг nginx и символьная ссылка будут удалены.">Удалить</button>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                class="ghost-button icon-button service-pin-toggle desktop-service-admin"
+                                data-layout-pin
+                                data-service-id="{{ service.pk }}"
+                                data-service-title="{{ service.title }}"
+                                aria-pressed="false"
+                                aria-label="Выбрать сервис {{ service.title }} для перемещения"
+                                title="Выбрать сервис {{ service.title }} для перемещения"
+                            >
+                                <span aria-hidden="true">⌖</span>
+                            </button>
+                        {% endif %}
+                        <a
+                            class="glass-panel service-card {% if current_status == "up" %}service-card-up{% elif current_status == "down" %}service-card-down{% else %}service-card-unknown{% endif %}"
+                            href="{% url 'portal:service_open' service.slug %}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-service-card
+                            data-service-id="{{ service.pk }}"
+                            data-service-status="{{ current_status }}"
+                            data-service-open-url="{% url 'portal:service_open' service.slug %}"
+                            aria-label="{% if current_status == "down" %}Сервис {{ service.title }} временно недоступен{% elif current_status == "unknown" %}Открыть сервис {{ service.title }}. Статус ещё проверяется{% else %}Открыть сервис {{ service.title }}{% endif %}"
+                            {% if current_status == "down" %}aria-disabled="true"{% endif %}
+                            title="{% if current_status == "up" %}Сервис доступен{% elif current_status == "down" %}Сервис временно недоступен{% else %}Статус неизвестен, сервис ещё проверяется{% endif %}"
+                        >
+                            <div class="service-icon service-icon-{{ service.icon_key }}">
+                                {% include "portal/_service_icon.html" with service=service %}
+                            </div>
+                            <div class="service-copy">
+                                <h3>{{ service.title }}</h3>
+                            </div>
+                        </a>
+                    {% endwith %}
+                {% else %}
+                    <div class="service-slot-placeholder" aria-hidden="true"></div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </section>
+{% else %}
+    <div class="glass-panel empty-state">
+        {% if service_layout_editable %}
+            <h3>Сервисы пока не зарегистрированы</h3>
+            <p>После публикации новые домены будут появляться здесь автоматически.</p>
+        {% else %}
+            <h3>Сервисы ещё не назначены</h3>
+            <p>Обратитесь к администратору портала, чтобы получить доступ к нужным сервисам.</p>
+        {% endif %}
+    </div>
+{% endif %}
