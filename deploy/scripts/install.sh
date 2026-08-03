@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ $EUID -eq 0 ]] || die "Запустите установщик через sudo."
 [[ -n "$SOURCE_ROOT" && -f "$SOURCE_ROOT/manage.py" ]] || die "Исходный код HUB не найден."
-# shellcheck source=/etc/os-release
+# shellcheck disable=SC1091
 source /etc/os-release
 case "${ID:-}:${VERSION_ID:-}" in
     debian:*) dpkg --compare-versions "$VERSION_ID" ge 12 || die "Нужен Debian 12+." ;;
