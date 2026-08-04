@@ -51,7 +51,7 @@ HUB Portal показывает сотруднику только разрешё
 
 ### Публичный репозиторий
 
-После появления публичного GitHub Release:
+Для установки из последнего публичного GitHub Release:
 
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/SirMaxBlack/hub-portal/main/install.sh)
@@ -177,10 +177,29 @@ python3 deploy/scripts/build_portable_bundle.py
 
 ## Документация
 
-- [Установка](docs/INSTALL.md)
-- [Обновление и rollback](docs/UPDATE.md)
-- [Архитектура](docs/ARCHITECTURE.md)
-- [Политика безопасности](SECURITY.md)
+### Начало работы и эксплуатация
+
+- [Установка и устройство установленной системы](docs/INSTALL.md) — режимы установки, пакеты, файлы, службы, БД, логи, backup и восстановление.
+- [Обновление и rollback](docs/UPDATE.md) — полный порядок обновления, проверки, автоматический откат кода и восстановление БД.
+- [Справочник `hubctl`](docs/HUBCTL.md) — все команды управления с параметрами, примерами и ожидаемым результатом.
+- [Архитектура](docs/ARCHITECTURE.md) — компоненты, потоки запросов, данные и границы доверия.
+- [Модель защиты](docs/SECURITY_MODEL.md) — как защищены портал и reverse proxy, доменные схемы и ограничения безопасности.
+
+### Web-интерфейс
+
+- [Карта web-разделов](docs/web/README.md)
+- [Авторизация и первый вход](docs/web/AUTHENTICATION.md)
+- [Сервисы](docs/web/SERVICES.md)
+- [Учётная запись](docs/web/ACCOUNT.md)
+- [Управление сервисами](docs/web/MANAGEMENT.md)
+- [Пользователи](docs/web/USERS.md)
+- [Журнал](docs/web/AUDIT.md)
+- [Безопасность](docs/web/SECURITY.md)
+- [Настройки визуала](docs/web/VISUAL.md)
+
+### Проект
+
+- [Политика сообщения об уязвимости](SECURITY.md)
 - [Участие в разработке](CONTRIBUTING.md)
 - [История изменений](CHANGELOG.md)
 
