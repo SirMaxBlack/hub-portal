@@ -1,4 +1,6 @@
 * text=auto
+.gitattributes text eol=lf
+.gitignore text eol=lf
 *.sh text eol=lf
 deploy/scripts/hubctl text eol=lf
 *.py text eol=lf
