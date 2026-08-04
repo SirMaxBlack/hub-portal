@@ -57,6 +57,16 @@ HUB Portal показывает сотруднику только разрешё
 bash <(curl -Ls https://raw.githubusercontent.com/SirMaxBlack/hub-portal/main/install.sh)
 ```
 
+По умолчанию bootstrap всегда выбирает самый поздно опубликованный Release.
+Если нужна конкретная версия, tag задаётся отдельно и только для этого запуска:
+
+```bash
+HUB_PORTAL_VERSION=v0.1.0-alpha.11 \
+  bash <(curl -Ls https://raw.githubusercontent.com/SirMaxBlack/hub-portal/main/install.sh)
+```
+
+Обычная установка не требует `HUB_PORTAL_VERSION`.
+
 ### Приватный форк
 
 ```bash
