@@ -1,0 +1,331 @@
+{% load portal_tags %}
+<div class="user-form-shell" data-user-modal-shell>
+    <div class="section-header">
+        <div>
+            <p class="eyebrow">Управление пользователем</p>
+            <h2>{{ page_heading }}</h2>
+            {% if page_subtitle %}
+                <p class="lead user-form-subtitle">{{ page_subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if is_modal %}
+            <button type="button" class="ghost-button icon-button" data-app-modal-dismiss aria-label="Закрыть окно">×</button>
+        {% else %}
+            <a href="{% url 'portal:rights_home' %}" class="ghost-button">Назад к списку</a>
+        {% endif %}
+    </div>
+
+    {% if managed_user %}
+            <div class="action-bar action-bar-fixed">
+                <div class="status-cluster">
+                <span class="status-pill">{% if managed_user.is_staff %}Администратор{% else %}Пользователь{% endif %}</span>
+                <span class="status-pill">{% if managed_user.deleted_at %}Архив{% elif managed_user.is_active %}Учётная запись активна{% else %}Учётная запись отключена{% endif %}</span>
+                <span class="status-pill" data-token-status-pill>
+                    {% if managed_user.can_reveal_login_token %}
+                        Токен активен
+                    {% elif managed_user.has_login_token %}
+                        Токен требует перевыпуска
+                    {% else %}
+                        Токен не создан
+                    {% endif %}
+                </span>
+                {% if login_lock_summary.is_locked %}
+                    <span class="status-pill status-pill-warning">Блокировка входа: {{ login_lock_duration_label }}</span>
+                {% endif %}
+            </div>
+            <div class="action-cluster action-cluster-fixed">
+                {% if managed_user.deleted_at %}
+                    <button type="button" class="primary-button" data-json-post="{% url 'portal:rights_user_restore' managed_user.pk %}" data-confirm="Разархивировать пользователя {{ managed_user.username }}?">Разархивировать</button>
+                {% else %}
+                    <button type="button" class="ghost-button" data-require-password-change-url="{% url 'portal:rights_user_require_password_change' managed_user.pk %}">Потребовать смену пароля</button>
+                    <button type="button" class="ghost-button" data-token-reveal-url="{% url 'portal:rights_user_token_reveal' managed_user.pk %}" {% if not managed_user.can_reveal_login_token %}disabled{% endif %}>Показать токен</button>
+                    <button type="button" class="primary-button" data-token-generate-url="{% url 'portal:rights_user_token_generate' managed_user.pk %}">{% if managed_user.has_login_token %}Ротировать токен{% else %}Создать токен{% endif %}</button>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="tab-strip" data-tab-strip data-default-tab="{{ active_tab|default:'basic' }}">
+        <button type="button" class="tab-button {% if active_tab|default:'basic' == 'basic' %}is-active{% endif %}" data-tab-button="basic">Основное</button>
+        <button type="button" class="tab-button {% if active_tab == 'access' %}is-active{% endif %}" data-tab-button="access">Доступы</button>
+        <button type="button" class="tab-button {% if active_tab == 'security' %}is-active{% endif %}" data-tab-button="security">Безопасность</button>
+        {% if managed_user %}
+            <button type="button" class="tab-button {% if active_tab == 'sessions' %}is-active{% endif %}" data-tab-button="sessions">Сессии</button>
+            <button type="button" class="tab-button {% if active_tab == 'audit' %}is-active{% endif %}" data-tab-button="audit">Аудит</button>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{% if is_modal %}{{ request.path }}?modal=1{% else %}{{ request.path }}{% endif %}" class="stack-form ajax-modal-form" data-modal-form>
+        {% csrf_token %}
+        {% if is_modal %}<input type="hidden" name="modal" value="1">{% endif %}
+        {% if form.set_temporary_password %}{{ form.set_temporary_password }}{% endif %}
+        {% if form.non_field_errors %}
+            <div class="form-error">{{ form.non_field_errors|join:", " }}</div>
+        {% endif %}
+
+        <section class="tab-panel {% if active_tab|default:'basic' == 'basic' %}is-active{% endif %}" data-tab-panel="basic">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<div class="field-error">{{ form.username.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+                    {{ form.full_name }}
+                    {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="toggle-grid">
+                <label class="toggle-card" for="{{ form.is_active.id_for_label }}">
+                    <div>
+                        <span class="toggle-card-title">{{ form.is_active.label }}</span>
+                        <span class="field-help">Отключайте запись без удаления пользователя.</span>
+                    </div>
+                    {{ form.is_active }}
+                </label>
+                <label class="toggle-card" for="{{ form.is_staff.id_for_label }}">
+                    <div>
+                        <span class="toggle-card-title">{{ form.is_staff.label }}</span>
+                        <span class="field-help">Администратор видит всех пользователей и все активные сервисы.</span>
+                    </div>
+                    {{ form.is_staff }}
+                </label>
+            </div>
+            {% if form.is_active.errors %}<div class="field-error">{{ form.is_active.errors|join:", " }}</div>{% endif %}
+            {% if form.is_staff.errors %}<div class="field-error">{{ form.is_staff.errors|join:", " }}</div>{% endif %}
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <span class="summary-card-label">Последний вход</span>
+                    <strong>{{ managed_user.last_login|date:"d.m.Y H:i"|default:"Не входил" }}</strong>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Пароль установлен</span>
+                    <strong>{{ managed_user.password_changed_at|date:"d.m.Y H:i"|default:"Нет данных" }}</strong>
+                </div>
+            </div>
+
+            {% if form.password1 %}
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                        <div class="field-inline">
+                            {{ form.password1 }}
+                            <button type="button" class="ghost-button field-inline-button" data-generate-password data-password-target="{{ form.password1.id_for_label }}" data-password-confirm-target="{{ form.password2.id_for_label }}">Сгенерировать</button>
+                        </div>
+                        {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors|join:", " }}</div>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="tab-panel {% if active_tab == 'access' %}is-active{% endif %}" data-tab-panel="access">
+            <section class="service-access-panel">
+                <div class="panel-subhead">
+                    <h3>{{ form.services.label }}</h3>
+                    <p class="field-help" data-admin-services-note {% if not form.instance.is_staff %}hidden{% endif %}>
+                        Администратор имеет доступ ко всем активным сервисам. Индивидуальное ограничение сервисов для этой роли не применяется.
+                    </p>
+                </div>
+                <div class="selectable-service-grid {% if form.instance.is_staff %}is-disabled{% endif %}" data-service-selector>
+                    {% for checkbox in form.services %}
+                        <label class="selectable-service-card" for="{{ checkbox.id_for_label }}">
+                            {{ checkbox.tag }}
+                            <span class="selectable-service-check">✓</span>
+                            <span class="selectable-service-title">{{ checkbox.choice_label }}</span>
+                        </label>
+                    {% empty %}
+                        <div class="table-muted">Активные сервисы пока не зарегистрированы.</div>
+                    {% endfor %}
+                </div>
+                {% if form.services.errors %}<div class="field-error">{{ form.services.errors|join:", " }}</div>{% endif %}
+            </section>
+        </section>
+
+        <section class="tab-panel {% if active_tab == 'security' %}is-active{% endif %}" data-tab-panel="security">
+            {% if form.new_password1 %}
+                <section class="password-reset-panel">
+                    <div class="panel-subhead">
+                        <h3>Временный пароль</h3>
+                        <p class="field-help">Минимум 8 символов. Пользователь будет обязан сменить пароль при следующем входе.</p>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="{{ form.new_password1.id_for_label }}">{{ form.new_password1.label }}</label>
+                            <div class="field-inline">
+                                {{ form.new_password1 }}
+                                <button type="button" class="ghost-button field-inline-button" data-generate-password data-password-target="{{ form.new_password1.id_for_label }}" data-password-confirm-target="{{ form.new_password2.id_for_label }}" data-password-hidden-target="{{ form.set_temporary_password.id_for_label }}">Сгенерировать</button>
+                            </div>
+                            {% if form.new_password1.errors %}<div class="field-error">{{ form.new_password1.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.new_password2.id_for_label }}">{{ form.new_password2.label }}</label>
+                            {{ form.new_password2 }}
+                            {% if form.new_password2.errors %}<div class="field-error">{{ form.new_password2.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="password-reset-panel">
+                <div class="panel-subhead">
+                    <h3>IP-доступ пользователя</h3>
+                    <p class="field-help">Если таблица пуста, для этой учётной записи действует только общий доступ к HUB.</p>
+                </div>
+                {% if user_access_rule_errors %}
+                    <div class="form-error">
+                        {% for error in user_access_rule_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="access-rules-editor" data-ip-rule-editor>
+                    <div class="table-wrap">
+                        <table class="portal-table access-rules-table">
+                            <thead>
+                                <tr>
+                                    <th>Адрес или подсеть</th>
+                                    <th class="table-actions-cell">Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody data-ip-rule-body>
+                                {% for rule in user_access_rule_values %}
+                                    <tr>
+                                        <td class="access-rule-cell">
+                                            <input type="text" name="user_access_rules" value="{{ rule }}" class="access-rule-input" placeholder="Например, 192.168.1.0/24">
+                                        </td>
+                                        <td class="table-actions-cell">
+                                            <button type="button" class="ghost-button icon-button access-rule-remove" data-remove-ip-rule aria-label="Удалить строку">−</button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <template data-ip-rule-template>
+                        <tr>
+                            <td class="access-rule-cell">
+                                <input type="text" name="user_access_rules" value="" class="access-rule-input" placeholder="Например, 192.168.1.0/24">
+                            </td>
+                            <td class="table-actions-cell">
+                                <button type="button" class="ghost-button icon-button access-rule-remove" data-remove-ip-rule aria-label="Удалить строку">−</button>
+                            </td>
+                        </tr>
+                    </template>
+                    <div class="inline-actions access-rule-editor-actions">
+                        <button type="button" class="ghost-button" data-add-ip-rule>+ Добавить адрес</button>
+                    </div>
+                </div>
+            </section>
+
+            {% if managed_user and not managed_user.deleted_at %}
+                <div class="security-action-grid">
+                    <button type="button" class="ghost-button" data-token-reveal-url="{% url 'portal:rights_user_token_reveal' managed_user.pk %}" {% if not managed_user.can_reveal_login_token %}disabled{% endif %}>Показать токен</button>
+                    <button type="button" class="ghost-button" data-token-revoke-url="{% url 'portal:rights_user_token_revoke' managed_user.pk %}" {% if not managed_user.has_login_token %}disabled{% endif %}>Отозвать токен</button>
+                    <button type="button" class="ghost-button" data-token-rotate-url="{% url 'portal:rights_user_token_rotate' managed_user.pk %}">Ротировать токен</button>
+                    <button type="button" class="ghost-button" data-require-password-change-url="{% url 'portal:rights_user_require_password_change' managed_user.pk %}">Потребовать смену пароля</button>
+                    <button type="button" class="ghost-button" data-json-post="{% url 'portal:rights_user_login_lock_reset' managed_user.pk %}">Снять блокировку авторизации</button>
+                </div>
+            {% endif %}
+        </section>
+
+        {% if managed_user %}
+            <section class="tab-panel {% if active_tab == 'sessions' %}is-active{% endif %}" data-tab-panel="sessions">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Сессии</p>
+                        <h3>Активные сессии</h3>
+                    </div>
+                    <button type="button" class="ghost-button" data-json-post="{% url 'portal:rights_user_session_revoke_all' managed_user.pk %}" data-confirm="Завершить все сессии пользователя {{ managed_user.username }}?">Завершить все</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="portal-table sessions-table">
+                        <thead>
+                            <tr>
+                                <th>IP</th>
+                                <th>Устройство</th>
+                                <th>Создана</th>
+                                <th>Активность</th>
+                                <th>Метод</th>
+                                <th>Истекает</th>
+                                <th>Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in sessions %}
+                                <tr>
+                                    <td data-label="IP">{{ session.ip_address|default:"—" }}</td>
+                                    <td data-label="Устройство">{{ session.device_label|default:"Браузер" }}</td>
+                                    <td data-label="Создана">{{ session.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td data-label="Активность">{{ session.last_seen_at|date:"d.m.Y H:i" }}</td>
+                                    <td data-label="Метод">{{ session.auth_method|auth_method_label }}</td>
+                                    <td data-label="Истекает">{{ session.expires_at|date:"d.m.Y H:i" }}</td>
+                                    <td data-label="Действие">
+                                        <div class="session-actions">
+                                            <button type="button" class="ghost-button" data-json-post="{% url 'portal:rights_user_session_revoke' managed_user.pk session.session_key %}" data-confirm="Завершить выбранную сессию?">Завершить</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="7">Активные сессии будут появляться здесь после нового входа пользователя.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="tab-panel {% if active_tab == 'audit' %}is-active{% endif %}" data-tab-panel="audit">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Аудит</p>
+                        <h3>Последние действия</h3>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="portal-table">
+                        <thead>
+                            <tr>
+                                <th>Когда</th>
+                                <th>Куда</th>
+                                <th>Результат</th>
+                                <th>Метод</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in audit_events %}
+                                <tr>
+                                    <td>{{ event.occurred_at|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ event.target_label }}</td>
+                                    <td><span class="table-badge {% if event.result == 'success' %}table-badge-accent{% else %}table-badge-muted{% endif %}">{{ event.result|result_label }}</span></td>
+                                    <td>{{ event.auth_method|auth_method_label }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4">Бизнес-события пользователя появятся здесь после первых действий в системе.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+
+        <div class="inline-actions sticky-form-actions">
+            <button type="submit" class="primary-button">Сохранить</button>
+            {% if is_modal %}
+                <button type="button" class="ghost-button" data-app-modal-dismiss>Отмена</button>
+            {% else %}
+                <a href="{% url 'portal:rights_home' %}" class="ghost-button">Отмена</a>
+            {% endif %}
+        </div>
+    </form>
+</div>

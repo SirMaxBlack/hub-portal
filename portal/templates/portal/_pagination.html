@@ -1,0 +1,19 @@
+{% load portal_tags %}
+{% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" aria-label="Пагинация">
+        {% if page_obj.has_previous %}
+            <a href="{% querystring page=page_obj.previous_page_number %}" class="ghost-button">Назад</a>
+        {% else %}
+            <span class="ghost-button is-disabled">Назад</span>
+        {% endif %}
+        <div class="pagination-meta">
+            <strong>Страница {{ page_obj.number }}</strong>
+            <span>из {{ page_obj.paginator.num_pages }}</span>
+        </div>
+        {% if page_obj.has_next %}
+            <a href="{% querystring page=page_obj.next_page_number %}" class="ghost-button">Вперёд</a>
+        {% else %}
+            <span class="ghost-button is-disabled">Вперёд</span>
+        {% endif %}
+    </nav>
+{% endif %}

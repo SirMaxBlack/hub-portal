@@ -1,0 +1,19 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Нет доступа{% endblock %}
+{% block header_title %}Доступ запрещён{% endblock %}
+
+{% block content %}
+<section class="glass-panel narrow-panel">
+    <p class="eyebrow">Ошибка доступа</p>
+    <h2>У вашей учётной записи нет прав на этот домен</h2>
+    <p class="lead">
+        Если доступ нужен для работы, обратитесь к администратору портала. Он сможет выдать
+        права в разделе <strong>Права</strong>.
+    </p>
+    <div class="inline-actions">
+        <a href="{% url 'portal:dashboard' %}" class="primary-button">Вернуться к сервисам</a>
+        <a href="{% url 'portal:logout' %}" class="ghost-button">Выйти</a>
+    </div>
+</section>
+{% endblock %}

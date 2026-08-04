@@ -1,0 +1,36 @@
+{% load portal_tags %}
+<div class="table-wrap table-wrap-tight" data-logs-table-container>
+    <table class="portal-table logs-table">
+        <thead>
+            <tr>
+                <th>Кто</th>
+                <th>Когда</th>
+                <th>IP</th>
+                <th>Куда</th>
+                <th>Метод авторизации</th>
+                <th>Результат</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in audit_events %}
+                <tr class="interactive-row" tabindex="0" role="button" aria-label="Показать детали события {{ event.target_label }}" data-open-modal-url="{% url 'portal:rights_log_detail' event.pk %}?modal=1">
+                    <td>{{ event.username_snapshot|default:"Неизвестно" }}</td>
+                    <td>{{ event.occurred_at|date:"d.m.Y H:i:s" }}</td>
+                    <td>{{ event.ip_address|default:"—" }}</td>
+                    <td>{{ event.target_label }}</td>
+                    <td>{{ event.auth_method|auth_method_label }}</td>
+                    <td><span class="table-badge {% if event.result == 'success' %}table-badge-accent{% else %}table-badge-muted{% endif %}">{{ event.result|result_label }}</span></td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6">События по выбранным фильтрам не найдены.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="table-panel-footer">
+    <p class="field-help">Найдено событий: {{ audit_page.paginator.count }}</p>
+    {% include "portal/_pagination.html" with page_obj=audit_page %}
+</div>

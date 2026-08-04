@@ -1,0 +1,6 @@
+AUTH_METHOD_ACCOUNT = "account"
+AUTH_METHOD_TOKEN = "token"
+SESSION_AUTH_METHOD_KEY = "portal_auth_method"
+SESSION_LOGIN_REDIRECT_STATE_KEY = "portal_login_redirect_state_token"
+SESSION_LOGIN_NEXT_URL_KEY = "portal_login_next_url"
+LOGIN_IP_BLOCK_COOKIE_NAME = "hub_portal_login_blocked"

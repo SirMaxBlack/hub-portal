@@ -1,0 +1,147 @@
+{% extends "portal/base.html" %}
+{% load portal_tags %}
+
+{% block title %}Журнал{% endblock %}
+{% block header_title %}Журнал{% endblock %}
+
+{% block content %}
+<section class="glass-panel section-card">
+    <div class="section-header">
+        <div>
+            <p class="eyebrow">Аудит</p>
+            <h2>Журнал действий</h2>
+        </div>
+        <div class="inline-actions">
+            <a href="{% url 'portal:rights_logs_export' %}{% querystring %}" class="ghost-button">Экспорт CSV</a>
+            <button type="button" class="ghost-button danger-button audit-clear-button" data-open-audit-clear-modal>Очистить журнал</button>
+        </div>
+    </div>
+
+    <form method="get" class="filters-panel">
+        <div class="filters-grid filters-grid-logs">
+            <div class="field">
+                <label for="filter-period">Период</label>
+                <select id="filter-period" name="period" data-enhanced-select>
+                    <option value="today" {% if selected_filters.period == "today" %}selected{% endif %}>Сегодня</option>
+                    <option value="24h" {% if selected_filters.period == "24h" %}selected{% endif %}>Последние 24 часа</option>
+                    <option value="7d" {% if selected_filters.period == "7d" %}selected{% endif %}>Последние 7 дней</option>
+                    <option value="30d" {% if selected_filters.period == "30d" %}selected{% endif %}>Последние 30 дней</option>
+                    <option value="custom" {% if selected_filters.period == "custom" %}selected{% endif %}>Произвольный период</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="filter-user">Пользователь</label>
+                <select id="filter-user" name="user" data-enhanced-select data-enhanced-search="true">
+                    <option value="">Все пользователи</option>
+                    {% for value in filter_options.users %}
+                        <option value="{{ value }}" {% if selected_filters.user == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="filter-ip">IP</label>
+                <input id="filter-ip" type="text" name="ip" value="{{ selected_filters.ip }}" placeholder="Например, 192.0.2.10">
+            </div>
+            <div class="field">
+                <label for="filter-category">Куда</label>
+                <select id="filter-category" name="category" data-enhanced-select data-enhanced-search="true">
+                    <option value="">Все категории</option>
+                    {% for value in filter_options.categories %}
+                        <option value="{{ value }}" {% if selected_filters.category == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="filter-kind">Тип</label>
+                <select id="filter-kind" name="kind" data-enhanced-select>
+                    <option value="">Все типы</option>
+                    {% for value, label in filter_options.kinds %}
+                        <option value="{{ value }}" {% if selected_filters.kind == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="filter-auth-method">Метод авторизации</label>
+                <select id="filter-auth-method" name="auth_method" data-enhanced-select>
+                    <option value="">Все методы</option>
+                    {% for value in filter_options.auth_methods %}
+                        <option value="{{ value }}" {% if selected_filters.auth_method == value %}selected{% endif %}>{{ value|auth_method_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="filter-result">Результат</label>
+                <select id="filter-result" name="result" data-enhanced-select>
+                    <option value="">Все результаты</option>
+                    {% for value in filter_options.results %}
+                        <option value="{{ value }}" {% if selected_filters.result == value %}selected{% endif %}>{{ value|result_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field period-custom-fields {% if selected_filters.period != 'custom' %}is-hidden{% endif %}" data-period-custom-fields>
+                <label for="filter-date-from">С</label>
+                <input id="filter-date-from" type="date" name="date_from" value="{{ selected_filters.date_from }}">
+            </div>
+            <div class="field period-custom-fields {% if selected_filters.period != 'custom' %}is-hidden{% endif %}" data-period-custom-fields>
+                <label for="filter-date-to">По</label>
+                <input id="filter-date-to" type="date" name="date_to" value="{{ selected_filters.date_to }}">
+            </div>
+            <div class="field">
+                <label for="filter-log-page-size">На странице</label>
+                <select id="filter-log-page-size" name="page_size" data-enhanced-select>
+                    {% for option in log_page_size_options %}
+                        <option value="{{ option }}" {% if log_page_size == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="inline-actions filters-actions">
+            <button type="submit" class="primary-button">Применить</button>
+            <a href="{% url 'portal:rights_logs' %}" class="ghost-button">Сбросить</a>
+        </div>
+    </form>
+
+    {% include "portal/rights/_logs_table.html" %}
+</section>
+
+<div class="modal-shell" data-audit-clear-modal hidden>
+    <div class="modal-backdrop" data-audit-clear-dismiss></div>
+    <section class="glass-panel modal-card" role="dialog" aria-modal="true" aria-labelledby="audit-clear-title">
+        <div class="section-header modal-header">
+            <div>
+                <p class="eyebrow">Опасное действие</p>
+                <h2 id="audit-clear-title">Очистить журнал</h2>
+            </div>
+            <button type="button" class="ghost-button icon-button" data-audit-clear-dismiss aria-label="Закрыть окно">×</button>
+        </div>
+
+        <form method="post" action="{% url 'portal:rights_logs_clear' %}" class="modal-content-stack" data-audit-clear-form>
+            {% csrf_token %}
+            <div class="danger-note">
+                <p>Будут удалены все записи аудита в базе данных и очищены только HUB-логи в <code>/var/log/nginx</code>, включая rotated-файлы.</p>
+                <p>Во время операции портал продолжит работать, но новые audit-записи и project-логи временно не будут сохраняться.</p>
+            </div>
+
+            <div class="field">
+                <label for="audit-clear-confirmation">Подтверждение</label>
+                <input
+                    id="audit-clear-confirmation"
+                    type="text"
+                    name="confirmation_phrase"
+                    value=""
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="Введите ОЧИСТИТЬ"
+                    data-audit-clear-input
+                >
+                <div class="field-help">Для запуска очистки введите точную фразу <strong>ОЧИСТИТЬ</strong>.</div>
+            </div>
+
+            <div class="inline-actions modal-actions">
+                <button type="button" class="ghost-button" data-audit-clear-dismiss>Отмена</button>
+                <button type="submit" class="primary-button danger-button audit-clear-button" data-audit-clear-submit disabled>Очистить журнал</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

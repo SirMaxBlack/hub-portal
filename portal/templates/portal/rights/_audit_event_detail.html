@@ -1,0 +1,60 @@
+{% load portal_tags %}
+<div class="audit-detail-sheet">
+    <div class="section-header">
+        <div>
+            <p class="eyebrow">Детали события</p>
+            <h2>{{ event.target_label }}</h2>
+        </div>
+        <button type="button" class="ghost-button icon-button" data-app-modal-dismiss aria-label="Закрыть окно">×</button>
+    </div>
+    <dl class="detail-grid">
+        <div class="detail-row">
+            <dt>Пользователь</dt>
+            <dd>{{ event.username_snapshot|default:"Неизвестно" }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>Когда</dt>
+            <dd>{{ event.occurred_at|date:"d.m.Y H:i:s" }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>IP</dt>
+            <dd>{{ event.ip_address|default:"—" }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>Категория</dt>
+            <dd>{{ event.category|default:"—" }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>Метод авторизации</dt>
+            <dd>{{ event.auth_method|auth_method_label }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>Результат</dt>
+            <dd>{{ event.result|result_label }}</dd>
+        </div>
+        <div class="detail-row detail-row-wide">
+            <dt>Полный URL</dt>
+            <dd>{{ event.host }}{{ event.path }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>HTTP-метод</dt>
+            <dd>{{ event.http_method|default:"—" }}</dd>
+        </div>
+        <div class="detail-row">
+            <dt>HTTP-статус</dt>
+            <dd>{{ event.status_code|default:"—" }}</dd>
+        </div>
+        <div class="detail-row detail-row-wide">
+            <dt>User-Agent</dt>
+            <dd>{{ event.user_agent|default:"—" }}</dd>
+        </div>
+        <div class="detail-row detail-row-wide">
+            <dt>Request ID</dt>
+            <dd>{{ event.request_id|default:"—" }}</dd>
+        </div>
+        <div class="detail-row detail-row-wide">
+            <dt>Дополнительно</dt>
+            <dd><pre class="detail-pre">{{ event.metadata|default:"{}" }}</pre></dd>
+        </div>
+    </dl>
+</div>

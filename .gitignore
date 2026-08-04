@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+.venv-*/
+venv/
+
+# Django runtime
+db.sqlite3
+staticfiles/
+runtime/
+.release-id
+*.log
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.token
+cookies*.txt
+
+# Build and release artifacts
+dist/
+build/
+*.tar
+*.tar.gz
+*.sha256
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Project-local temporary output
+CODEX_RESULT/
+artifacts/
+tmp/
+temp/

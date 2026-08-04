@@ -1,0 +1,152 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Безопасность{% endblock %}
+{% block header_title %}Безопасность{% endblock %}
+
+{% block content %}
+<section class="section-card table-panel security-page-panel">
+    <div class="status-cluster security-current-ip">
+        <span class="status-pill">Текущий IP: {{ current_client_ip|default:"не определён" }}</span>
+    </div>
+
+    {% if security_form_errors %}
+        <div class="form-error">
+            {% for error in security_form_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="stack-form security-settings-form">
+        {% csrf_token %}
+        <section class="access-rules-editor security-panel-card security-panel-card-compact security-card-access" data-ip-rule-editor>
+            <div class="panel-subhead">
+                <div>
+                    <h3>Доступ к HUB</h3>
+                    <p class="field-help">Если таблица пуста, портал будет доступен с любых адресов.</p>
+                </div>
+            </div>
+            <div class="table-wrap access-rules-table-wrap-compact">
+                <table class="portal-table access-rules-table access-rules-table-compact">
+                    <thead>
+                        <tr>
+                            <th>Адрес или подсеть</th>
+                            <th class="table-actions-cell">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody data-ip-rule-body>
+                        {% for rule in portal_access_rule_values %}
+                            <tr>
+                                <td class="access-rule-cell">
+                                    <input type="text" name="portal_access_rules" value="{{ rule }}" class="access-rule-input" placeholder="Например, 192.168.1.0/24">
+                                </td>
+                                <td class="table-actions-cell">
+                                    <button type="button" class="ghost-button icon-button access-rule-remove" data-remove-ip-rule aria-label="Удалить строку">−</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <template data-ip-rule-template>
+                <tr>
+                    <td class="access-rule-cell">
+                        <input type="text" name="portal_access_rules" value="" class="access-rule-input" placeholder="Например, 192.168.1.0/24">
+                    </td>
+                    <td class="table-actions-cell">
+                        <button type="button" class="ghost-button icon-button access-rule-remove" data-remove-ip-rule aria-label="Удалить строку">−</button>
+                    </td>
+                </tr>
+            </template>
+            <div class="inline-actions access-rule-editor-actions">
+                <button type="button" class="ghost-button" data-add-ip-rule>+ Добавить адрес</button>
+            </div>
+        </section>
+
+        <section class="security-panel-card security-card-locks">
+            <div class="panel-subhead">
+                <div>
+                    <h3>Допустимое количество ошибок при авторизации</h3>
+                    <p class="field-help">Ограничение действует только для входа по логину и паролю. Вход по токену не блокируется.</p>
+                </div>
+                <label class="security-switch-card">
+                    <input type="checkbox" name="login_attempt_limit_enabled" value="1" {% if security_settings.login_attempt_limit_enabled %}checked{% endif %}>
+                    <span>Включено</span>
+                </label>
+            </div>
+
+            <div class="summary-grid security-lock-summary-grid">
+                <div class="summary-card">
+                    <span class="summary-card-label">Текущий лимит</span>
+                    <strong>{{ security_settings.login_attempt_limit_count }} ошибок</strong>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Длительность блокировки</span>
+                    <strong>{{ login_lock_duration_label }}</strong>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Заблокированных учёток</span>
+                    <strong>{{ active_login_lock_counts.users }}</strong>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Заблокированных браузеров</span>
+                    <strong>{{ active_login_lock_counts.browsers }}</strong>
+                </div>
+            </div>
+
+            <div class="form-grid security-lock-config-grid">
+                <div class="field">
+                    <label for="id_login_attempt_limit_count">Количество разрешённых ошибок</label>
+                    <input
+                        id="id_login_attempt_limit_count"
+                        type="number"
+                        min="1"
+                        max="25"
+                        name="login_attempt_limit_count"
+                        value="{{ security_settings.login_attempt_limit_count }}"
+                        inputmode="numeric"
+                    >
+                </div>
+                <div class="field">
+                    <label for="id_login_attempt_lock_value">Время блокировки</label>
+                    <div class="field-inline field-inline-split">
+                        <input
+                            id="id_login_attempt_lock_value"
+                            type="number"
+                            min="1"
+                            max="365"
+                            name="login_attempt_lock_value"
+                            value="{{ security_settings.login_attempt_lock_value }}"
+                            inputmode="numeric"
+                        >
+                        <select id="id_login_attempt_lock_unit" name="login_attempt_lock_unit" data-enhanced-select="true">
+                            {% for unit_value, unit_label in lock_duration_units %}
+                                <option value="{{ unit_value }}" {% if security_settings.login_attempt_lock_unit == unit_value %}selected{% endif %}>{{ unit_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inline-actions security-form-actions">
+                <button type="submit" class="primary-button">Сохранить</button>
+            </div>
+        </section>
+
+        <section class="security-panel-card security-card-reset">
+            <div class="panel-subhead">
+                <div>
+                    <h3>Управление ограничениями</h3>
+                    <p class="field-help">Сброс удаляет активные ограничения авторизации и серверные слепки браузеров.</p>
+                </div>
+            </div>
+            <div class="danger-note">
+                <p>Если лимиты были превышены, пользователи снова смогут входить по логину и паролю сразу после сброса.</p>
+            </div>
+            <div class="inline-actions security-form-actions">
+                <button type="submit" name="security_action" value="reset_lockouts" class="ghost-button">Сброс ограничений</button>
+            </div>
+        </section>
+    </form>
+</section>
+{% endblock %}

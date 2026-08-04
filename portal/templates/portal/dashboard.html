@@ -1,0 +1,39 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Сервисы{% endblock %}
+{% block header_title %}Сервисы{% endblock %}
+
+{% block content %}
+<section class="glass-panel hero-panel">
+    <div>
+        <h2>Каталог сервисов</h2>
+        <p class="lead">
+            {% if user.is_staff %}
+                Администратор видит весь каталог. Карточка блокируется только если сервис подтверждённо недоступен.
+            {% else %}
+                Здесь показаны только назначенные вам сервисы. Красный статус означает подтверждённую недоступность и не даёт открыть сервис.
+            {% endif %}
+        </p>
+    </div>
+    <div class="metrics-grid">
+        <div class="metric-card metric-card-total">
+            <span class="metric-value" data-service-metric="total">{% if user.is_staff %}{{ service_counts.total }}{% else %}{{ service_counts.assigned }}{% endif %}</span>
+            <span class="metric-label">{% if user.is_staff %}Всего сервисов{% else %}Назначено сервисов{% endif %}</span>
+        </div>
+        <div class="metric-card metric-card-success metric-card-up">
+            <span class="metric-value" data-service-metric="up">{{ service_counts.up }}</span>
+            <span class="metric-label">Доступно</span>
+        </div>
+        <div class="metric-card metric-card-danger metric-card-down">
+            <span class="metric-value" data-service-metric="down">{{ service_counts.down }}</span>
+            <span class="metric-label">Недоступно</span>
+        </div>
+        <div class="metric-card metric-card-unknown">
+            <span class="metric-value" data-service-metric="unknown">{{ service_counts.unknown }}</span>
+            <span class="metric-label">Проверяется</span>
+        </div>
+    </div>
+</section>
+
+{{ service_layout_board_html|safe }}
+{% endblock %}

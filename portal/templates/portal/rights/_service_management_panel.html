@@ -1,0 +1,44 @@
+<section class="glass-panel hero-panel" data-service-management-panel data-refresh-fragment="service-management">
+    <div class="section-header section-header-compact service-layout-toolbar">
+        <h2>Активные сервисы</h2>
+        <div class="inline-actions service-management-actions desktop-service-admin">
+            <button
+                type="button"
+                class="ghost-button icon-button"
+                data-layout-reset
+                data-layout-reset-url="{% url 'portal:rights_service_layout_reset' %}"
+                aria-label="Сбросить расположение сервисов"
+                title="Сбросить расположение сервисов"
+            >
+                <span aria-hidden="true">↶</span>
+            </button>
+            <button
+                type="button"
+                class="primary-button service-add-button"
+                data-open-modal-url="{% url 'portal:rights_service_create' %}?modal=1"
+            >
+                Добавить сервис
+            </button>
+        </div>
+    </div>
+    <div class="metrics-grid">
+        <div class="metric-card metric-card-total">
+            <span class="metric-value" data-service-metric="total">{{ service_counts.total }}</span>
+            <span class="metric-label">Всего сервисов</span>
+        </div>
+        <div class="metric-card metric-card-success metric-card-up">
+            <span class="metric-value" data-service-metric="up">{{ service_counts.up }}</span>
+            <span class="metric-label">Доступно</span>
+        </div>
+        <div class="metric-card metric-card-danger metric-card-down">
+            <span class="metric-value" data-service-metric="down">{{ service_counts.down }}</span>
+            <span class="metric-label">Недоступно</span>
+        </div>
+        <div class="metric-card metric-card-unknown">
+            <span class="metric-value" data-service-metric="unknown">{{ service_counts.unknown }}</span>
+            <span class="metric-label">Проверяется</span>
+        </div>
+    </div>
+</section>
+
+{{ service_layout_board_html|safe }}

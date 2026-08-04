@@ -1,0 +1,154 @@
+{% extends "portal/base.html" %}
+{% load portal_tags %}
+
+{% block title %}Учётная запись{% endblock %}
+{% block header_title %}Учётная запись{% endblock %}
+
+{% block content %}
+<section class="account-grid">
+    <div class="account-column">
+        <div class="glass-panel account-summary">
+            <p class="eyebrow">Профиль</p>
+            <h2>{{ user.display_name }}</h2>
+            <div class="summary-list">
+                <div class="summary-row">
+                    <span>Логин</span>
+                    <strong>{{ user.username }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Роль</span>
+                    <strong>{% if user.is_staff %}Администратор{% else %}Пользователь{% endif %}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Последний вход</span>
+                    <strong>{{ user.last_login|date:"d.m.Y H:i"|default:"Не входил" }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Пароль установлен</span>
+                    <strong>{{ user.password_changed_at|date:"d.m.Y H:i"|default:"Нет данных" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel account-summary">
+            <p class="eyebrow">Токен входа</p>
+            <h2>Токен</h2>
+            <div class="summary-list">
+                <div class="summary-row">
+                    <span>Статус</span>
+                    <strong data-account-token-status>
+                        {% if can_reveal_login_token %}
+                            Активен
+                        {% elif has_login_token %}
+                            Нужен перевыпуск администратором
+                        {% else %}
+                            Не создан
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="summary-row">
+                    <span>Создан</span>
+                    <strong data-account-token-created>{{ login_token_created_at|date:"d.m.Y H:i"|default:"—" }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Использован</span>
+                    <strong data-account-token-last-used>{{ login_token_last_used_at|date:"d.m.Y H:i"|default:"—" }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Создал</span>
+                    <strong data-account-token-created-by>{% if login_token_created_by %}{{ login_token_created_by.display_name }}{% else %}—{% endif %}</strong>
+                </div>
+            </div>
+            <div class="inline-actions">
+                <button type="button" class="ghost-button" data-token-reveal-url="{% url 'portal:account_token_reveal' %}" {% if not can_reveal_login_token %}disabled{% endif %}>Показать токен</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="account-column">
+        <div class="glass-panel account-form-panel">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">Безопасность</p>
+                    <h2>Сменить пароль</h2>
+                </div>
+            </div>
+            <form method="post" class="stack-form">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-error">{{ form.non_field_errors|join:", " }}</div>
+                {% endif %}
+                <div class="form-grid form-grid-compact">
+                    <div class="field">
+                        <label for="{{ form.old_password.id_for_label }}">{{ form.old_password.label }}</label>
+                        {{ form.old_password }}
+                        {% if form.old_password.errors %}<div class="field-error">{{ form.old_password.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.new_password1.id_for_label }}">{{ form.new_password1.label }}</label>
+                        {{ form.new_password1 }}
+                        {% if form.new_password1.errors %}<div class="field-error">{{ form.new_password1.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.new_password2.id_for_label }}">{{ form.new_password2.label }}</label>
+                        {{ form.new_password2 }}
+                        {% if form.new_password2.errors %}<div class="field-error">{{ form.new_password2.errors|join:", " }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="inline-actions">
+                    <button type="submit" class="primary-button">Обновить пароль</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="glass-panel account-form-panel account-panel-span">
+        <div class="section-header">
+            <div>
+                <p class="eyebrow">Сессии</p>
+                <h2>Активные сессии</h2>
+            </div>
+            <button type="button" class="ghost-button" data-json-post="{% url 'portal:account_session_revoke_others' %}" data-confirm="Завершить все остальные сессии?">Завершить остальные</button>
+        </div>
+        <div class="table-wrap">
+            <table class="portal-table sessions-table">
+                <thead>
+                    <tr>
+                        <th>IP</th>
+                        <th>Устройство</th>
+                        <th>Создана</th>
+                        <th>Активность</th>
+                        <th>Метод</th>
+                        <th>Истекает</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                        <tr>
+                            <td data-label="IP">{{ session.ip_address|default:"—" }}</td>
+                            <td data-label="Устройство">{{ session.device_label|default:"Браузер" }}</td>
+                            <td data-label="Создана">{{ session.created_at|date:"d.m.Y H:i" }}</td>
+                            <td data-label="Активность">{{ session.last_seen_at|date:"d.m.Y H:i" }}</td>
+                            <td data-label="Метод">{{ session.auth_method|auth_method_label }}</td>
+                            <td data-label="Истекает">{{ session.expires_at|date:"d.m.Y H:i" }}</td>
+                            <td data-label="Действие">
+                                <div class="session-actions">
+                                    {% if session.session_key == current_session_key %}
+                                        <span class="table-badge table-badge-accent">Текущая</span>
+                                    {% endif %}
+                                    <button type="button" class="ghost-button" data-json-post="{% url 'portal:account_session_revoke' session.session_key %}" data-confirm="{% if session.session_key == current_session_key %}Завершить текущую сессию и выйти?{% else %}Завершить выбранную сессию?{% endif %}">Завершить</button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7">Активные сессии появятся здесь после следующего входа.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

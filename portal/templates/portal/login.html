@@ -1,0 +1,122 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block title %}HUB{% endblock %}
+{% block body_class %}login-shell{% endblock %}
+{% block script_bundle %}
+<script src="{% static 'portal/particles.js' %}" defer></script>
+<script src="{% static 'portal/login.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+{% with current_auth_method=form.auth_method.value|default:"account" %}
+<section
+    class="auth-stage"
+    data-login-particle-base-variant="calm"
+    data-login-particle-variant="{% if show_ip_access_denied or show_login_error_alert or show_login_lock_alert %}alert{% else %}calm{% endif %}"
+    data-login-particle-revert-delay="{% if show_ip_access_denied or show_login_lock_alert %}{{ login_particle_lock_alert_duration_ms }}{% elif show_login_error_alert %}{{ login_particle_invalid_alert_duration_ms }}{% else %}0{% endif %}"
+    data-login-particle-desktop-count="{{ login_particle_desktop_count }}"
+    data-login-particle-mobile-count="{{ login_particle_mobile_count }}"
+    data-login-particle-calm-speed="{{ login_particle_calm_speed_px }}"
+    data-login-particle-alert-speed="{{ login_particle_alert_speed_px }}"
+    data-login-particle-invalid-alert-duration="{{ login_particle_invalid_alert_duration_ms }}"
+    data-login-particle-lock-alert-duration="{{ login_particle_lock_alert_duration_ms }}"
+    data-login-particle-fade-duration="{{ login_particle_fade_duration_ms }}"
+>
+    <div class="auth-stage-particles" aria-hidden="true">
+        <canvas class="auth-stage-particles-canvas" data-login-particles-canvas></canvas>
+    </div>
+    <button type="button" class="primary-button icon-button theme-toggle-button auth-stage-theme-toggle" data-theme-toggle aria-label="Переключить тему" title="Переключить тему">
+        <span data-theme-icon>☀</span>
+    </button>
+    <div class="glass-panel auth-card">
+        <div class="auth-card-head auth-card-head-compact">
+            <div class="auth-switch" data-auth-switch style="--auth-switch-index: {% if current_auth_method == 'token' %}1{% else %}0{% endif %};">
+                <button type="button" class="auth-switch-button {% if current_auth_method != 'token' %}is-active{% endif %}" data-auth-mode-button="account">Учётная запись</button>
+                <button type="button" class="auth-switch-button {% if current_auth_method == 'token' %}is-active{% endif %}" data-auth-mode-button="token">Токен</button>
+            </div>
+        </div>
+        <form method="post" class="stack-form" data-auth-form>
+            {% csrf_token %}
+            {{ form.auth_method }}
+            <input type="hidden" name="state" value="{{ login_state }}">
+            <input type="hidden" name="next" value="{{ next }}">
+            <input type="hidden" name="browser_fingerprint" value="" data-browser-fingerprint-input>
+            <div class="form-error" data-form-error {% if not form.non_field_errors %}hidden{% endif %}>{{ form.non_field_errors|join:", " }}</div>
+
+            <div class="auth-panel-stage" data-auth-panel-stage>
+                <div class="auth-panel {% if current_auth_method != 'token' %}is-active{% endif %}" data-auth-panel="account" aria-hidden="{% if current_auth_method == 'token' %}true{% else %}false{% endif %}" {% if current_auth_method == 'token' %}hidden{% endif %}>
+                    <div class="field">
+                        <label for="{{ form.username.id_for_label }}" class="visually-hidden">{{ form.username.label }}</label>
+                        {{ form.username }}
+                        <div class="field-error" data-field-error-for="username" {% if not form.username.errors %}hidden{% endif %}>{{ form.username.errors|join:", " }}</div>
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.password.id_for_label }}" class="visually-hidden">{{ form.password.label }}</label>
+                        <div class="field-inline-embedded">
+                            {{ form.password }}
+                            <button type="button" class="field-inline-embed-button" data-password-visibility-toggle data-password-target="{{ form.password.id_for_label }}" data-visibility-label="пароль" aria-label="Показать пароль" aria-pressed="false" title="Показать пароль">
+                                <span class="field-inline-icon eye-toggle-icon" aria-hidden="true">
+                                    <svg class="eye-icon eye-icon-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2.2 12s3.45-6.2 9.8-6.2 9.8 6.2 9.8 6.2-3.45 6.2-9.8 6.2S2.2 12 2.2 12Z"></path>
+                                        <circle cx="12" cy="12" r="2.9"></circle>
+                                    </svg>
+                                    <svg class="eye-icon eye-icon-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 3l18 18"></path>
+                                        <path d="M10.7 5.95A10.8 10.8 0 0 1 12 5.8c6.35 0 9.8 6.2 9.8 6.2a18.9 18.9 0 0 1-4.06 4.85"></path>
+                                        <path d="M14.75 14.9A3.2 3.2 0 0 1 9.1 9.25"></path>
+                                        <path d="M6.15 6.17A18.63 18.63 0 0 0 2.2 12s3.45 6.2 9.8 6.2a10.7 10.7 0 0 0 5.03-1.23"></path>
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="field-help" data-caps-lock-warning hidden>Включён Caps Lock.</div>
+                        <div class="field-error" data-field-error-for="password" {% if not form.password.errors %}hidden{% endif %}>{{ form.password.errors|join:", " }}</div>
+                    </div>
+                </div>
+
+                <div class="auth-panel {% if current_auth_method == 'token' %}is-active{% endif %}" data-auth-panel="token" aria-hidden="{% if current_auth_method == 'token' %}false{% else %}true{% endif %}" {% if current_auth_method != 'token' %}hidden{% endif %}>
+                    <div class="field">
+                        <label for="{{ form.token.id_for_label }}" class="visually-hidden">{{ form.token.label }}</label>
+                        <div class="field-inline-embedded">
+                            {{ form.token }}
+                            <button type="button" class="field-inline-embed-button" data-password-visibility-toggle data-password-target="{{ form.token.id_for_label }}" data-visibility-label="токен" aria-label="Показать токен" aria-pressed="false" title="Показать токен">
+                                <span class="field-inline-icon eye-toggle-icon" aria-hidden="true">
+                                    <svg class="eye-icon eye-icon-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2.2 12s3.45-6.2 9.8-6.2 9.8 6.2 9.8 6.2-3.45 6.2-9.8 6.2S2.2 12 2.2 12Z"></path>
+                                        <circle cx="12" cy="12" r="2.9"></circle>
+                                    </svg>
+                                    <svg class="eye-icon eye-icon-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 3l18 18"></path>
+                                        <path d="M10.7 5.95A10.8 10.8 0 0 1 12 5.8c6.35 0 9.8 6.2 9.8 6.2a18.9 18.9 0 0 1-4.06 4.85"></path>
+                                        <path d="M14.75 14.9A3.2 3.2 0 0 1 9.1 9.25"></path>
+                                        <path d="M6.15 6.17A18.63 18.63 0 0 0 2.2 12s3.45 6.2 9.8 6.2a10.7 10.7 0 0 0 5.03-1.23"></path>
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="field-error" data-field-error-for="token" {% if not form.token.errors %}hidden{% endif %}>{{ form.token.errors|join:", " }}</div>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="primary-button submit-button" data-auth-submit-button>
+                <span data-submit-label>Войти</span>
+                <span class="button-spinner" data-submit-spinner hidden></span>
+            </button>
+        </form>
+    </div>
+    {% if show_ip_access_denied %}
+        <div class="modal-shell login-feedback-modal" data-login-feedback-modal data-login-feedback-duration="{{ login_particle_lock_alert_duration_ms }}">
+            <div class="modal-backdrop"></div>
+            <section class="glass-panel modal-card login-feedback-card" role="alertdialog" aria-modal="true" aria-labelledby="login-feedback-title">
+                <div class="auth-card-head">
+                    <div class="auth-card-titlebar">
+                        <h2 id="login-feedback-title">Доступ ограничен</h2>
+                    </div>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+</section>
+{% endwith %}
+{% endblock %}
