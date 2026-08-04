@@ -67,7 +67,15 @@ try:
 except (OSError, json.JSONDecodeError):
     raise SystemExit(2)
 if mode == "latest":
-    release = next((item for item in payload if isinstance(item, dict) and not item.get("draft")), None) if isinstance(payload, list) else None
+    candidates = [
+        item for item in payload
+        if isinstance(item, dict) and not item.get("draft")
+    ] if isinstance(payload, list) else []
+    release = max(
+        candidates,
+        key=lambda item: item.get("published_at") or item.get("created_at") or "",
+        default=None,
+    )
 else:
     release = payload if isinstance(payload, dict) else None
 if not release:
@@ -83,6 +91,7 @@ IFS=$'\t' read -r tag archive_url checksum_url <<<"$release_fields"
     echo "В последнем релизе отсутствует установочный архив или checksum." >&2
     exit 2
 }
+echo "[HUB] Выбран релиз: $tag"
 
 github_request "$archive_url" 'application/octet-stream' "$tmp_dir/hub-portal.tar.gz" 900
 github_request "$checksum_url" 'application/octet-stream' "$tmp_dir/hub-portal.tar.gz.sha256" 120

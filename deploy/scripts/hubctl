@@ -70,7 +70,15 @@ except (OSError, json.JSONDecodeError):
 if mode == "latest":
     if not isinstance(payload, list):
         raise SystemExit(2)
-    release = next((item for item in payload if isinstance(item, dict) and not item.get("draft")), None)
+    candidates = [
+        item for item in payload
+        if isinstance(item, dict) and not item.get("draft")
+    ]
+    release = max(
+        candidates,
+        key=lambda item: item.get("published_at") or item.get("created_at") or "",
+        default=None,
+    )
 else:
     release = payload if isinstance(payload, dict) else None
 if not release:

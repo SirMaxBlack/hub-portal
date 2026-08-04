@@ -12,15 +12,19 @@ source "$ROOT/deploy/scripts/hubctl"
 
 cat > "$TEMP_DIR/releases.json" <<'JSON'
 [
-  {"tag_name":"v0.1.0-alpha.9","draft":true,"assets":[]},
-  {"tag_name":"v0.1.0-alpha.8","draft":false,"assets":[
+  {"tag_name":"v0.1.0-alpha.8","draft":false,"published_at":"2026-08-04T04:00:00Z","assets":[
     {"name":"hub-portal-0.1.0-alpha.8.tar.gz","url":"https://api.example/archive"},
     {"name":"hub-portal-0.1.0-alpha.8.tar.gz.sha256","url":"https://api.example/checksum"}
+  ]},
+  {"tag_name":"v0.1.0-alpha.9","draft":true,"published_at":"2026-08-04T06:00:00Z","assets":[]},
+  {"tag_name":"v0.1.0-alpha.10","draft":false,"published_at":"2026-08-04T05:00:00Z","assets":[
+    {"name":"hub-portal-0.1.0-alpha.10.tar.gz","url":"https://api.example/archive-new"},
+    {"name":"hub-portal-0.1.0-alpha.10.tar.gz.sha256","url":"https://api.example/checksum-new"}
   ]}
 ]
 JSON
 
-expected=$'v0.1.0-alpha.8\thttps://api.example/archive\thttps://api.example/checksum'
+expected=$'v0.1.0-alpha.10\thttps://api.example/archive-new\thttps://api.example/checksum-new'
 actual="$(github_release_fields latest "$TEMP_DIR/releases.json")"
 [[ "$actual" == "$expected" ]]
 
