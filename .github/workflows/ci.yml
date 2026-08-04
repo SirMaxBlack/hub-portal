@@ -51,6 +51,8 @@ jobs:
       - name: Check shell scripts
         run: shellcheck -x install.sh deploy/scripts/*.sh deploy/scripts/hubctl deploy/tests/*.sh
       - name: Test hubctl GitHub helpers
-        run: bash deploy/tests/test_hubctl_github.sh
+        run: |
+          bash deploy/tests/test_hubctl_github.sh
+          bash deploy/tests/test_install_ui.sh
       - name: Check executable scripts
         run: test -x install.sh && test -x deploy/scripts/install.sh && test -x deploy/scripts/hubctl
