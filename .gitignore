@@ -42,7 +42,6 @@ Thumbs.db
 Desktop.ini
 
 # Project-local temporary output
-CODEX_RESULT/
 artifacts/
 tmp/
 temp/
